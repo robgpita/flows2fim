@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"go-cli-app/cmd/calculator"
-	"go-cli-app/cmd/hello"
-	"go-cli-app/internal/config"
+	"flows2fim/cmd/calculator"
+	"flows2fim/cmd/hello"
+	"flows2fim/internal/config"
 )
 
 func main() {
