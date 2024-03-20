@@ -1,10 +1,5 @@
 package config
 
-import (
-	"os"
-	"strings"
-)
-
 var GlobalConfig AppConfig
 
 type AppConfig struct {
@@ -14,9 +9,9 @@ type AppConfig struct {
 
 func LoadConfig() {
 	// Load your configurations into GlobalConfig
-	GlobalConfig.CapitalizeName = strings.ToUpper(os.Getenv("GOCLIAPP_CAPITALIZE_NAME")) == "TRUE"
-	GlobalConfig.Language = os.Getenv("GOCLIAPP_LANGUAGE")
-	if GlobalConfig.Language == "" {
-		GlobalConfig.Language = "English" // Default language
-	}
+	// GlobalConfig.CapitalizeName = strings.ToUpper(os.Getenv("GOCLIAPP_CAPITALIZE_NAME")) == "TRUE"
+	// GlobalConfig.Language = os.Getenv("GOCLIAPP_LANGUAGE")
+	// if GlobalConfig.Language == "" {
+	// 	GlobalConfig.Language = "English" // Default language
+	// }
 }
