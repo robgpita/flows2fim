@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# The script must be executed from the root of the repository
+
 set -eo pipefail
 
 echo "Building for Linux..."
