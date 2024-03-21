@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  flows2fim:
+    build: .
+    volumes:
+      - .:/app
+    entrypoint: [ sleep, infinity ]
