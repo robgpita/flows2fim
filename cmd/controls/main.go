@@ -195,7 +195,7 @@ func Run(args []string) {
 
 	flags.StringVar(&startReachIDStr, "sid", "", "Starting reach ID")
 
-	flags.StringVar(&startControlStageStr, "scs", "", "Starting control stage")
+	flags.StringVar(&startControlStageStr, "scs", "0.0", "Starting control stage")
 
 	// Parse flags from the arguments
 	if err := flags.Parse(args); err != nil {
