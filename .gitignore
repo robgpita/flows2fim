@@ -20,3 +20,9 @@ builds/*
 
 # Go workspace file
 go.work
+
+# Data file
+*.csv
+*.vrt
+*.tif
+*.db
