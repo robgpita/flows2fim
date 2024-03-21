@@ -10,8 +10,15 @@
 
 ## Getting Started
 
-`docker run -it -v /home/abdul.siddiqui/workbench/repos/fim_utilities/utils/flows2inundation/data_ops:/app -v /home/abdul.siddiqui/data/outputs:/data --workdir /app golang:1.22.1`
+1. Download fim-library from `s3://fimc-data/fim2d/prototype/2024_03_13/` to `testdata/library` folder.
 
-`go run main.go controls -db=reach_data.db -f flows_huc12.csv -c outputs.csv -sid 8489318 -scs 0.0`
+2. Launch a docker container
+`docker run -it -v <path-to-repo>:/app -v --workdir /app golang:1.22.1` and run following commands inside the container
 
-`flows2fim fim -c outputs.csv -lib /vsis3/fimc-data/fim2d/prototype/2024_03_13/ -o output.vrt -rel=false`
+1. Run `go mod tidy` to download dependencies
+
+1. Download GDAL `apt-get update && apt-get install -y gdal-bin`
+
+1. Run `go run main.go controls -db=testdata/reach_data.db -f testdata/flows_100yr.csv -c controls.csv -sid 8489318 -scs 0.0` This will create a controls.csv file
+
+2. Run `go run main.go fim -c controls.csv -lib testdata/library -o output.vrt` This will create a VRT file. VRT can be tested by loading in QGIS.
