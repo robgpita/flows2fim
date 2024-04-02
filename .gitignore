@@ -29,3 +29,4 @@ go.work
 
 # Test data
 !testdata/*
+testdata/outputs/*
