@@ -1,7 +1,7 @@
 # Flows2FIM
 
 ## Overview
-flows2fim is a commandline utility program that has following commands.
+flows2fim is a command line utility program that has following commands.
  - controls: Given a flow file and a reach database. Create controls table of reach flows and downstream boundary conditions.
  - fim: Given a control table and a fim library folder. Create a flood inundation VRT for the control conditions.
 
