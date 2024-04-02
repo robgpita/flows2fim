@@ -1,11 +1,21 @@
 # Flows2FIM
 
 ## Overview
+flows2fim is a commandline utility program that has following commands.
+ - controls: Given a flow file and a reach database. Create controls table of reach flows and downstream boundary conditions.
+ - fim: Given a control table and a fim library folder. Create a flood inundation VRT for the control conditions.
+
+Dependencies:
+ - 'fim' command needs access to 'gdalbuildvrt' program. It must be installed separately and made available in Path.
 
 ## Purpose of Directories
-- `cmd`: Contains executable applications.
+
+- `cmd`: Contains individual folders for different commands.
+
 - `pkg`: Houses reusable packages potentially useful in other projects.
+
 - `internal`: For private application code not intended for external use.
+
 - `scripts`: Includes useful scripts for building, testing, and more.
 
 ## Getting Started
@@ -17,3 +27,11 @@
 3. Run `go run main.go controls -db=testdata/reach_data.db -f testdata/flows_100yr.csv -c controls.csv -sid 8489318 -scs 0.0` This will create a controls.csv file
 
 4. Run `go run main.go fim -c controls.csv -lib testdata/library -o output.vrt` This will create a VRT file. VRT can be tested by loading in QGIS.
+
+## Testing
+
+1. Provide access to S3 fimc-data bucket to GDAL.
+
+2. Run `go test ./...` to run automated tests.
+
+## Building
