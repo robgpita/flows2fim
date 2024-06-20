@@ -32,7 +32,11 @@ go.work
 *.db
 *.xml
 
+# Data
+data/
+
 # Test data
 !testdata/*
 testdata/outputs/*
+
 
