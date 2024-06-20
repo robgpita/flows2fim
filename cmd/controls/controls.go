@@ -88,7 +88,7 @@ func ConnectDB(dbPath string) (*sql.DB, error) {
 }
 
 func FetchUpstreamReaches(db *sql.DB, controlReachID int) ([]int, error) {
-	rows, err := db.Query("SELECT reach_id FROM reach_controls WHERE control_reach_id = ?", controlReachID)
+	rows, err := db.Query("SELECT id FROM reaches WHERE to_id = ?", controlReachID)
 	if err != nil {
 		// Check if the error is because of no rows
 		if err == sql.ErrNoRows {

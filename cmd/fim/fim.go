@@ -118,7 +118,7 @@ func Run(args []string) (gdalArgs []string, err error) {
 			return []string{}, err
 		}
 
-		folderName := fmt.Sprintf("z%.1f", controlStage)
+		folderName := fmt.Sprintf("z_%.1f", controlStage)
 		folderName = filepath.Join(absFimLibPath, reachID, folderName)
 		folderName = strings.Replace(folderName, ".", "_", -1) // Replace '.' with '_'
 		fileName := fmt.Sprintf("f_%d.tif", int(flow))
