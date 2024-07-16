@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -36,13 +37,13 @@ type ControlData struct {
 
 type RatingCurveRecord struct {
 	ReachID           int
-	Flow              float32
+	Flow              int
 	Stage             float32
 	ControlReachStage float32
 }
 type ResultRecord struct {
 	ReachID              int
-	Flow                 float32
+	Flow                 int
 	ControlReachStageStr string
 }
 
@@ -89,7 +90,7 @@ func ConnectDB(dbPath string) (*sql.DB, error) {
 }
 
 func FetchUpstreamReaches(db *sql.DB, controlReachID int) ([]int, error) {
-	rows, err := db.Query("SELECT id FROM reaches WHERE to_id = ?", controlReachID)
+	rows, err := db.Query("SELECT reach_id FROM conflation WHERE conflation_to_id = ?", controlReachID)
 	if err != nil {
 		// Check if the error is because of no rows
 		if err == sql.ErrNoRows {
@@ -117,7 +118,7 @@ func FetchUpstreamReaches(db *sql.DB, controlReachID int) ([]int, error) {
 }
 
 func FetchNormalDepthFlowStage(db *sql.DB, reachID int, flow float32) (RatingCurveRecord, error) {
-	row := db.QueryRow("SELECT flow, stage, control_reach_stage FROM rating_curves WHERE reach_id = ? AND normal_depth = TRUE ORDER BY ABS(flow - ? ) LIMIT 1", reachID, flow)
+	row := db.QueryRow("SELECT us_flow, us_wse, ds_wse FROM rating_curves WHERE reach_id = ? AND boundary_condition = 'nd' ORDER BY ABS(us_flow - ? ) LIMIT 1", reachID, flow)
 	var rc RatingCurveRecord
 	if err := row.Scan(&rc.Flow, &rc.Stage, &rc.ControlReachStage); err != nil {
 		// Check if the error is because of no rows
@@ -132,7 +133,7 @@ func FetchNormalDepthFlowStage(db *sql.DB, reachID int, flow float32) (RatingCur
 }
 
 func FetchNearestFlowStage(db *sql.DB, reachID int, flow, controlStage float32) (RatingCurveRecord, error) {
-	row := db.QueryRow("SELECT flow, stage, control_reach_stage FROM rating_curves WHERE reach_id = ? ORDER BY ABS(control_reach_stage - ?), ABS(flow - ? ) LIMIT 1", reachID, controlStage, flow)
+	row := db.QueryRow("SELECT us_flow, us_wse, ds_wse FROM rating_curves WHERE reach_id = ?  AND boundary_condition = 'kwse' ORDER BY ABS(ds_wse - ?), ABS(us_flow - ? ) LIMIT 1", reachID, controlStage, flow)
 	var rc RatingCurveRecord
 	if err := row.Scan(&rc.Flow, &rc.Stage, &rc.ControlReachStage); err != nil {
 		// Check if the error is because of no rows
@@ -170,6 +171,9 @@ func TraverseUpstream(db *sql.DB, flows map[int]float32, startReachID int, contr
 			rc, err = FetchNearestFlowStage(db, current.ReachID, flow, current.ControlReachStage)
 			if err != nil {
 				return []ResultRecord{}, fmt.Errorf("error fetching rating curve for reach %d: %v", current.ReachID, err)
+			}
+			if math.Abs(float64(rc.ControlReachStage)-float64(current.ControlReachStage)) > 1 {
+				log.Printf("Warning: Large difference in target vs found Control Reach Stage for reach %v. %.1f vs %.1f", current.ReachID, rc.ControlReachStage, current.ControlReachStage)
 			}
 		}
 
@@ -213,7 +217,7 @@ func WriteCSV(data []ResultRecord, filePath string) error {
 	}
 
 	for _, d := range data {
-		record := []string{strconv.Itoa(d.ReachID), fmt.Sprintf("%.1f", d.Flow), fmt.Sprintf("%.1f", d.ControlReachStage)}
+		record := []string{strconv.Itoa(d.ReachID), fmt.Sprint(d.Flow), d.ControlReachStageStr}
 		if err := writer.Write(record); err != nil {
 			return err
 		}

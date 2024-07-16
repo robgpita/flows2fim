@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -109,19 +108,10 @@ func Run(args []string) (gdalArgs []string, err error) {
 	var tifFiles []string
 	for _, record := range records[1:] { // Skip header row
 		reachID := record[0]
-		flow, err := strconv.ParseFloat(record[1], 64)
-		if err != nil {
-			return []string{}, err
-		}
-		controlStage, err := strconv.ParseFloat(record[2], 64)
-		if err != nil {
-			return []string{}, err
-		}
 
-		folderName := fmt.Sprintf("z_%.1f", controlStage)
-		folderName = filepath.Join(absFimLibPath, reachID, folderName)
-		folderName = strings.Replace(folderName, ".", "_", -1) // Replace '.' with '_'
-		fileName := fmt.Sprintf("f_%d.tif", int(flow))
+		record[2] = strings.Replace(record[2], ".", "_", -1) // Replace '.' with '_'
+		folderName := filepath.Join(absFimLibPath, reachID, fmt.Sprintf("z_%s", record[2]))
+		fileName := fmt.Sprintf("f_%s.tif", record[1])
 		filePath := filepath.Join(folderName, fileName)
 
 		if relative {
