@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"flag"
+	"flows2fim/pkg/utils"
 	"fmt"
 	"log"
 	"math"
@@ -173,8 +174,11 @@ func TraverseUpstream(db *sql.DB, flows map[int]float32, startReachID int, contr
 				return []ResultRecord{}, fmt.Errorf("error fetching rating curve for reach %d: %v", current.ReachID, err)
 			}
 			if math.Abs(float64(rc.ControlReachStage)-float64(current.ControlReachStage)) > 1 {
-				log.Printf("Warning: Large difference in target vs found Control Reach Stage for reach %v. %.1f vs %.1f", current.ReachID, rc.ControlReachStage, current.ControlReachStage)
+				log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: Large difference in target vs found Control Reach Stage for reach %v: %.1f vs %.1f", current.ReachID, current.ControlReachStage, rc.ControlReachStage)))
 			}
+		}
+		if math.Abs(float64(flow)-float64(rc.Flow))/float64(flow) > 0.25 {
+			log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: Large difference in target vs found flow for reach %v: %.1f vs %d", current.ReachID, flow, rc.Flow)))
 		}
 
 		if rc.ReachID == 0 {
