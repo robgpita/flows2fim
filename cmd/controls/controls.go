@@ -41,7 +41,9 @@ type RatingCurveRecord struct {
 	Flow              int
 	Stage             float32
 	ControlReachStage float32
+	BoundaryCondition string
 }
+
 type ResultRecord struct {
 	ReachID              int
 	Flow                 int
@@ -76,8 +78,46 @@ func ReadFlows(filePath string) (map[int]float32, error) {
 	return flows, scanner.Err()
 }
 
-func ConnectDB(dbPath string) (*sql.DB, error) {
+func ReadStartReachesCSV(filePath string) ([]ControlData, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
 
+	var startReaches []ControlData
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, record := range records {
+		if len(record) != 2 {
+			continue // Skip invalid lines
+		}
+		reachID, err := strconv.Atoi(record[0])
+		if err != nil {
+			continue // Skip invalid lines
+		}
+		controlStageStr := record[1]
+		var controlStage float64
+		var nd bool
+		if controlStageStr != "nd" {
+			controlStage, err = strconv.ParseFloat(controlStageStr, 32)
+			if err != nil {
+				continue // Skip invalid lines
+			}
+		} else {
+			nd = true
+		}
+		startReaches = append(startReaches, ControlData{ReachID: reachID, ControlReachStage: float32(controlStage), NormalDepth: nd})
+	}
+
+	return startReaches, nil
+}
+
+func ConnectDB(dbPath string) (*sql.DB, error) {
 	// Check if the file exists
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("database file does not exist: %s", dbPath)
@@ -91,7 +131,7 @@ func ConnectDB(dbPath string) (*sql.DB, error) {
 }
 
 func FetchUpstreamReaches(db *sql.DB, controlReachID int) ([]int, error) {
-	rows, err := db.Query("SELECT reach_id FROM conflation WHERE conflation_to_id = ?", controlReachID)
+	rows, err := db.Query("SELECT reach_id FROM conflation WHERE conflation_to_id = ?;", controlReachID)
 	if err != nil {
 		// Check if the error is because of no rows
 		if err == sql.ErrNoRows {
@@ -119,7 +159,14 @@ func FetchUpstreamReaches(db *sql.DB, controlReachID int) ([]int, error) {
 }
 
 func FetchNormalDepthFlowStage(db *sql.DB, reachID int, flow float32) (RatingCurveRecord, error) {
-	row := db.QueryRow("SELECT us_flow, us_wse, ds_wse FROM rating_curves WHERE reach_id = ? AND boundary_condition = 'nd' ORDER BY ABS(us_flow - ? ) LIMIT 1", reachID, flow)
+	row := db.QueryRow(`
+	SELECT us_flow, us_wse, ds_wse
+	FROM rating_curves
+	WHERE reach_id = ?
+	AND boundary_condition = 'nd'
+	ORDER BY ABS(us_flow - ? )
+	LIMIT 1;
+	`, reachID, flow)
 	var rc RatingCurveRecord
 	if err := row.Scan(&rc.Flow, &rc.Stage, &rc.ControlReachStage); err != nil {
 		// Check if the error is because of no rows
@@ -130,13 +177,20 @@ func FetchNormalDepthFlowStage(db *sql.DB, reachID int, flow float32) (RatingCur
 		return RatingCurveRecord{}, err
 	}
 	rc.ReachID = reachID
+	rc.BoundaryCondition = "nd"
 	return rc, nil
 }
 
 func FetchNearestFlowStage(db *sql.DB, reachID int, flow, controlStage float32) (RatingCurveRecord, error) {
-	row := db.QueryRow("SELECT us_flow, us_wse, ds_wse FROM rating_curves WHERE reach_id = ?  AND boundary_condition = 'kwse' ORDER BY ABS(ds_wse - ?), ABS(us_flow - ? ) LIMIT 1", reachID, controlStage, flow)
+	row := db.QueryRow(`
+	SELECT us_flow, us_wse, ds_wse, boundary_condition
+	FROM rating_curves
+	WHERE reach_id = ?
+	ORDER BY ABS(us_flow - ? ), ABS(ds_wse - ?)
+	LIMIT 1;
+	`, reachID, flow, controlStage)
 	var rc RatingCurveRecord
-	if err := row.Scan(&rc.Flow, &rc.Stage, &rc.ControlReachStage); err != nil {
+	if err := row.Scan(&rc.Flow, &rc.Stage, &rc.ControlReachStage, &rc.BoundaryCondition); err != nil {
 		// Check if the error is because of no rows
 		if err == sql.ErrNoRows {
 			// No rows found, not an error in this context
@@ -148,8 +202,8 @@ func FetchNearestFlowStage(db *sql.DB, reachID int, flow, controlStage float32) 
 	return rc, nil
 }
 
-func TraverseUpstream(db *sql.DB, flows map[int]float32, startReachID int, controlStage float32, normalDepth bool) (results []ResultRecord, err error) {
-	queue := []ControlData{{ReachID: startReachID, ControlReachStage: controlStage, NormalDepth: normalDepth}}
+func TraverseUpstream(db *sql.DB, flows map[int]float32, startReaches []ControlData) (results []ResultRecord, err error) {
+	queue := startReaches
 
 	for len(queue) > 0 {
 		current := queue[0]
@@ -173,35 +227,39 @@ func TraverseUpstream(db *sql.DB, flows map[int]float32, startReachID int, contr
 			if err != nil {
 				return []ResultRecord{}, fmt.Errorf("error fetching rating curve for reach %d: %v", current.ReachID, err)
 			}
-			if math.Abs(float64(rc.ControlReachStage)-float64(current.ControlReachStage)) > 1 {
-				log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: Large difference in target vs found Control Reach Stage for reach %v: %.1f vs %.1f", current.ReachID, current.ControlReachStage, rc.ControlReachStage)))
+			if math.Abs(float64(rc.ControlReachStage)-float64(current.ControlReachStage)) > 1 && rc.ReachID != 0 {
+				log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: Large difference in target vs found Control Reach Stage for reach %v: %.1f vs %.1f Boundary Condition picked is %s", current.ReachID, current.ControlReachStage, rc.ControlReachStage, rc.BoundaryCondition)))
 			}
 		}
-		if math.Abs(float64(flow)-float64(rc.Flow))/float64(flow) > 0.25 {
+		if math.Abs(float64(flow)-float64(rc.Flow))/float64(flow) > 0.25 && rc.ReachID != 0 {
 			log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: Large difference in target vs found flow for reach %v: %.1f vs %d", current.ReachID, flow, rc.Flow)))
 		}
-
-		if rc.ReachID == 0 {
-			continue
-		}
-		result := ResultRecord{ReachID: rc.ReachID, Flow: rc.Flow}
-		if current.NormalDepth {
-			result.ControlReachStageStr = "nd"
-		} else {
-			result.ControlReachStageStr = fmt.Sprintf("%.1f", rc.ControlReachStage)
-		}
-
-		results = append(results, result)
 
 		// Fetch upstream reaches
 		upstream, err := FetchUpstreamReaches(db, current.ReachID)
 		if err != nil {
 			return []ResultRecord{}, fmt.Errorf("error fetching upstream reaches for %d: %v", current.ReachID, err)
 		}
-		// Add upstream reaches to queue
-		for _, u := range upstream {
-			queue = append(queue, ControlData{ReachID: u, ControlReachStage: rc.Stage})
+
+		if rc.ReachID == 0 { // no rating curve record found, add upstream reaches with NormalDepth condition
+			for _, u := range upstream {
+				queue = append(queue, ControlData{ReachID: u, ControlReachStage: rc.Stage, NormalDepth: true})
+			}
+			continue // no result to add
+		} else {
+			for _, u := range upstream {
+				queue = append(queue, ControlData{ReachID: u, ControlReachStage: rc.Stage})
+			}
 		}
+
+		result := ResultRecord{ReachID: rc.ReachID, Flow: rc.Flow}
+		if rc.BoundaryCondition == "nd" {
+			result.ControlReachStageStr = "nd"
+		} else {
+			result.ControlReachStageStr = fmt.Sprintf("%.1f", rc.ControlReachStage)
+		}
+
+		results = append(results, result)
 	}
 
 	return results, nil
@@ -241,7 +299,7 @@ func Run(args []string) (err error) {
 	// Define flags
 
 	var (
-		dbPath, flowsFilePath, outputFilePath, startReachIDStr, startControlStageStr string
+		dbPath, flowsFilePath, outputFilePath, startReachesCSV, startReachIDsStr, startControlStagesStr string
 	)
 	flags.StringVar(&dbPath, "db", "", "Path to the database file")
 
@@ -249,9 +307,11 @@ func Run(args []string) (err error) {
 
 	flags.StringVar(&outputFilePath, "c", "", "Path to the output controls CSV file")
 
-	flags.StringVar(&startReachIDStr, "sid", "", "Starting reach ID")
+	flags.StringVar(&startReachesCSV, "scsv", "", "Path to the CSV file containing starting reach IDs and control stages")
 
-	flags.StringVar(&startControlStageStr, "scs", "nd", "Starting control stage")
+	flags.StringVar(&startReachIDsStr, "sids", "", "Comma-separated list of starting reach IDs")
+
+	flags.StringVar(&startControlStagesStr, "scs", "nd", "Comma-separated list of starting control stages (corresponding to the reach IDs)")
 
 	// Parse flags from the arguments
 	if err = flags.Parse(args); err != nil {
@@ -259,26 +319,48 @@ func Run(args []string) (err error) {
 	}
 
 	// Validate required flags
-	if dbPath == "" || flowsFilePath == "" || outputFilePath == "" || startReachIDStr == "" {
+	if dbPath == "" || flowsFilePath == "" || outputFilePath == "" {
 		fmt.Println("Missing required flags")
 		flags.PrintDefaults()
 		return fmt.Errorf("missing required flags")
 	}
 
-	// Parse numerical values from flags
-	startReachID, err := strconv.Atoi(startReachIDStr)
-	if err != nil {
-		return fmt.Errorf("invalid startReachID: %v", err)
-	}
-	var startControlStage float64
-	var nd bool
-	if startControlStageStr != "nd" {
-		startControlStage, err = strconv.ParseFloat(startControlStageStr, 32)
+	var startReaches []ControlData
+
+	if startReachesCSV != "" {
+		startReaches, err = ReadStartReachesCSV(startReachesCSV)
 		if err != nil {
-			return fmt.Errorf("invalid startControlStage: %v", err)
+			return fmt.Errorf("error reading start points CSV: %v", err)
+		}
+	} else if startReachIDsStr != "" && startControlStagesStr != "" {
+		// Parse reach IDs
+		startReachIDs := strings.Split(startReachIDsStr, ",")
+		startControlStages := strings.Split(startControlStagesStr, ",")
+
+		if len(startReachIDs) != len(startControlStages) {
+			return fmt.Errorf("the number of startReachIds must match the number of startControlStages")
+		}
+
+		for i, sidStr := range startReachIDs {
+			startReachID, err := strconv.Atoi(sidStr)
+			if err != nil {
+				return fmt.Errorf("invalid startReachID: %v", err)
+			}
+			controlStageStr := startControlStages[i]
+			var controlStage float64
+			var nd bool
+			if controlStageStr != "nd" {
+				controlStage, err = strconv.ParseFloat(controlStageStr, 32)
+				if err != nil {
+					return fmt.Errorf("invalid startControlStage: %v", err)
+				}
+			} else {
+				nd = true
+			}
+			startReaches = append(startReaches, ControlData{ReachID: startReachID, ControlReachStage: float32(controlStage), NormalDepth: nd})
 		}
 	} else {
-		nd = true
+		return fmt.Errorf("either a CSV file or start reach IDs and control stages must be provided")
 	}
 
 	flows, err := ReadFlows(flowsFilePath)
@@ -291,7 +373,7 @@ func Run(args []string) (err error) {
 		return fmt.Errorf("error connecting to database: %v", err)
 	}
 
-	results, err := TraverseUpstream(db, flows, startReachID, float32(startControlStage), nd)
+	results, err := TraverseUpstream(db, flows, startReaches)
 	if err != nil {
 		return fmt.Errorf("error traversing upstream: %v", err)
 	}
