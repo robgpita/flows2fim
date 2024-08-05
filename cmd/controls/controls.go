@@ -18,6 +18,16 @@ import (
 
 var usage string = `Usage of controls:
 Given a flow file and a reach database. Create controls table of reach flows and downstream boundary conditions.
+Database file must have a table rating_curves and contain following coloumns
+        reach_id INTEGER
+        us_flow REAL
+        us_depth REAL
+        us_wse Real
+        ds_depth REAL
+        ds_wse REAL
+        boundary_condition TEXT CHECK(boundary_condition IN ('nd','kwse'))
+        UNIQUE(reach_id, us_flow, ds_wse, boundary_condition)
+
 CLI flag syntax. The following forms are permitted:
 -flag
 --flag   // double dashes are also permitted
