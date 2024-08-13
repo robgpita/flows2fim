@@ -345,6 +345,7 @@ func Run(args []string) (err error) {
 
 		if len(startReachIDs) != len(startControlStages) {
 			if startControlStagesStr == "nd" {
+				startControlStages = make([]string, len(startReachIDs))
 				for i := range startReachIDs {
 					startControlStages[i] = "nd"
 				}
