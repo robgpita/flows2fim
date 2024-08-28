@@ -10,12 +10,15 @@ import (
 )
 
 var usage string = `Usage of flows2fim:
-	flows2fim COMMAND [Args]
+	flows2fim COMMAND Args
+	flows2fim [--version | --help]
+
 Commands:
- - controls: Given a flow file and a rating curves database, create a control table of reach flows and downstream boundary conditions.
- - fim: Given a control table and a fim library folder. Create a flood inundation map for the control conditions.
+  - controls: Given a flow file and a rating curves database, create a control table of reach flows and downstream boundary conditions.
+  - fim: Given a control table and a fim library folder, create a flood inundation map for the control conditions.
+
 Notes:
- - 'fim' command needs access to gdal programs. It must be installed separately and made available in Path.
+  - 'fim' command needs access to GDAL programs. They must be installed separately and available in the system's PATH.
 `
 
 var (
