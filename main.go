@@ -18,6 +18,12 @@ Notes:
  - 'fim' command needs access to gdal programs. It must be installed separately and made available in Path.
 `
 
+var (
+	GitTag    = "unknown" // will be injected at build-time
+	GitCommit = "unknown" // will be injected at build-time
+	BuildDate = "unknown" // will be injected at build-time
+)
+
 func main() {
 
 	config.LoadConfig()
@@ -31,6 +37,12 @@ func main() {
 	var err error
 
 	switch os.Args[1] {
+	case "-v", "--v", "-version", "--version":
+		fmt.Println("Software: flows2fim")
+		fmt.Println("Version:", GitTag)
+		fmt.Println("Commit:", GitCommit)
+		fmt.Println("Build Date:", BuildDate)
+		os.Exit(0)
 	case "-h", "--h", "-help", "--help":
 		fmt.Print(usage)
 		os.Exit(0)
