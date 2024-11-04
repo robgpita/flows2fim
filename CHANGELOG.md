@@ -1,5 +1,5 @@
 ### 0.2.0
-*Compatible with outputs from Ripple1D Version unkwon to 0.6.3*
+*Compatible with outputs from Ripple1D Version unknown to 0.6.3*
 
 - Default db table name changed from `conflation` to `network`
 - Default `to_id` name changed from `conflation_to_id` to `updated_to_id`
