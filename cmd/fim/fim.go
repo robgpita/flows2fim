@@ -1,6 +1,5 @@
 package fim
 
-// to do: add build args for gdal_merge on windows vs gdal_merge.py on linux. Also carefully review all changes"
 import (
 	"encoding/csv"
 	"flag"
@@ -105,7 +104,7 @@ func Run(args []string) (gdalArgs []string, err error) {
 		return []string{}, fmt.Errorf("missing required flags")
 	}
 
-	// Check if gdalbuildvrt or gdal_merge is available
+	// Check if gdalbuildvrt or GDAL tool is available
 	if !CheckGDALToolAvailable(gdalCommands[outputFormat]) {
 		return []string{}, fmt.Errorf("error: %[1]s is not available. Please install GDAL and ensure %[1]s is in your PATH", gdalCommands[outputFormat])
 	}
