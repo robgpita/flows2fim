@@ -202,8 +202,9 @@ func Run(args []string) (gdalArgs []string, err error) {
 			"-dstnodata", "-9999.0",
 			"-co", "COMPRESS=DEFLATE",
 			"-of", "COG",
+			"-overwrite",
 			"--optfile", tempFileName,
-			"-overwrite", absOutputPath,
+			absOutputPath,
 		}
 	}
 
@@ -218,7 +219,7 @@ func Run(args []string) (gdalArgs []string, err error) {
 		return []string{}, fmt.Errorf("error running %s: %v", gdalCommands[outputFormat], err)
 	}
 
-	fmt.Printf("FIM created at %s\n", absOutputPath)
+	fmt.Printf("Composite FIM created at %s\n", absOutputPath)
 
 	return gdalArgs, nil
 }
