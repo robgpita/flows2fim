@@ -148,6 +148,10 @@ func Run(args []string) (gdalArgs []string, err error) {
 		return []string{}, fmt.Errorf("error reading CSV file: %v", err)
 	}
 
+	if len(records) < 2 {
+		return []string{}, fmt.Errorf("no records in control file")
+	}
+
 	var tifFiles []string
 	for _, record := range records[1:] { // Skip header row
 		reachID := record[0]
