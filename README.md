@@ -17,13 +17,13 @@ Dependencies:
 1. Download `flows2fim` executables from `s3://fimc-data/flows2fim/release-assets/v0.2.0/`.
 
 1. Install `GDAL` if you don't already have it.
-   > GDAL can be installed through a vriaety of ways.
+   > GDAL can be installed through a variety of ways.
    > - On Windows: The easiest way is through `OSGeo4W` installer https://trac.osgeo.org/osgeo4w/#QuickStartforOSGeo4WUsers
    > - On Ubuntu Linux: Run `apt-get update && apt-get install -y gdal-bin`
 
 1. Make sure `flows2fim` and `GDAL` both are available in your Path.
-   > - On Windows: The easiest way is to place the downlowded `flows2fim.exe` file from step 1 in `C:\OSGeo4W\bin` and then use `OSGeo4W Shell` for the next steps
-   > - On Linux: Simplest option is to place the downlowded `flows2fim` file in `/bin` folder
+   > - On Windows: The easiest way is to place the downloaded `flows2fim.exe` file from step 1 in `C:\OSGeo4W\bin` and then use `OSGeo4W Shell` for the next steps
+   > - On Linux: Simplest option is to place the downloaded `flows2fim` file in `/bin` folder
 
 1. Get familiar using `flows2fim -h` and `flows2fim COMMAND -h`.
 
@@ -39,7 +39,7 @@ Dependencies:
 
 1. Clone the repository and perform following steps from the root of the repo.
 
-1. Download Baxter testadata from `s3://fimc-data/flows2fim/sample_data/v0_2_0/Baxter` to `testdata/Baxter` folder.
+1. Download Baxter testdata from `s3://fimc-data/flows2fim/sample_data/v0_2_0/Baxter` to `testdata/Baxter` folder.
 
 2. Launch a docker container using `docker compose up` and run following commands inside the container
 
