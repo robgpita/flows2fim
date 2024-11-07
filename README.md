@@ -10,6 +10,9 @@ It has following commands.
 Dependencies:
  - 'fim' command needs access to 'gdalbuildvrt' and 'gdalwarp' program. GDAL must be installed separately and made available in Path.
 
+Units:
+Current support is for English units. The flow values must be in `cfs`
+
 ## For Users
 
 ### Getting Started
