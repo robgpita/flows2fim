@@ -15,7 +15,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// Query Constants
+// SQL Query Constants
 const (
 	queryCreateFIMEntTable = `
 	CREATE TABLE memdb.fim_entries (
@@ -81,7 +81,8 @@ type fimRow struct {
 	boundaryCondition string
 }
 
-// processReachDir enumerates subfolders z_XXX and f_*.tif files for a single top-level reach folder
+// processReachDir parse boundary condition folders (z_XXX) and flow tif files (f_*.tif) for a reach folder.
+// It sends the parsed data to fimChan channel
 func processReachDir(reachDir, absFimLibDir string, fimChan chan<- fimRow) {
 	filepath.WalkDir(reachDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
@@ -200,31 +201,39 @@ func batchInsertFIMs(db *sql.DB, fimChan <-chan fimRow) error {
 	return tx.Commit()
 }
 
-// writeCSV is a generic function to write results to CSV
-// it returns number of data rows written in CSV
-func writeCSV(rows *sql.Rows, outFile string) (rowCount int, err error) {
-	file, err := os.Create(outFile)
+// writeCSV is a generic function to write results to CSV.
+// It is atomic i.e. it either succeeds or no file is created.
+// It returns number of data rows written in CSV.
+func writeCSV(rows *sql.Rows, outFile string) (int, error) {
+
+	// On the same filesystem, os.Rename is atomic so will create a temp file and rename it later.
+	outDir := filepath.Dir(outFile)
+	tempFile, err := os.CreateTemp(outDir, "~f2f_*.tmp")
 	if err != nil {
-		return 0, fmt.Errorf("error creating file %s: %v", outFile, err)
+		return 0, fmt.Errorf("error creating temp file: %v", err)
 	}
-	defer file.Close()
+	tempFilePath := tempFile.Name()
 
-	w := csv.NewWriter(file)
-	defer w.Flush()
+	defer func() {
+		_ = tempFile.Close()        // Always attempt to close file tempfile even if file is already closed
+		_ = os.Remove(tempFilePath) // Always attempt to remove tempfile even if file is already renamed
+	}()
 
-	// Write CSV header
+	w := csv.NewWriter(tempFile)
+	rowCount := 0
+
 	if err := w.Write([]string{"reach_id", "us_flow", "ds_wse", "boundary_condition"}); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error writing CSV header: %v", err)
 	}
 
 	for rows.Next() {
-		rowCount++
 		var reachID, usFlow int
 		var dsWse float64
 		var bc string
 		if err := rows.Scan(&reachID, &usFlow, &dsWse, &bc); err != nil {
-			return 0, err
+			return 0, fmt.Errorf("error scanning row: %v", err)
 		}
+
 		record := []string{
 			strconv.Itoa(reachID),
 			strconv.Itoa(usFlow),
@@ -232,12 +241,28 @@ func writeCSV(rows *sql.Rows, outFile string) (rowCount int, err error) {
 			bc,
 		}
 		if err := w.Write(record); err != nil {
-			return 0, err
+			return 0, fmt.Errorf("error writing CSV record: %v", err)
 		}
+		rowCount++
 	}
 	if err := rows.Err(); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error from rows iteration: %v", err)
 	}
+
+	w.Flush()
+	if err := w.Error(); err != nil {
+		return 0, fmt.Errorf("error flushing CSV writer: %v", err)
+	}
+
+	if err := tempFile.Close(); err != nil {
+		return 0, fmt.Errorf("error closing temp file: %v", err)
+	}
+
+	if err := os.Rename(tempFilePath, outFile); err != nil {
+		return 0, fmt.Errorf("error renaming temp file %s to %s: %v",
+			tempFilePath, outFile, err)
+	}
+
 	return rowCount, nil
 }
 
@@ -359,8 +384,8 @@ func Run(args []string) error {
 			return fmt.Errorf("error writing %s: %v", task.outFile, err)
 		}
 
-		fmt.Printf("Missing %s records found: %d\n", task.label, rowCount)
-		fmt.Printf("Missing %s file create %s\n", task.label, task.outFile)
+		fmt.Printf("Number of missing %s records found: %d\n", task.label, rowCount)
+		fmt.Printf("Missing %s file created at %s\n", task.label, task.outFile)
 	}
 
 	fmt.Println("Validation complete")
