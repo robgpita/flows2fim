@@ -201,11 +201,11 @@ func batchInsertFIMs(db *sql.DB, fimChan <-chan fimRow) error {
 }
 
 // writeCSV is a generic function to write results to CSV
-func writeCSV(rows *sql.Rows, outFile string) error {
-
+// it returns number of data rows written in CSV
+func writeCSV(rows *sql.Rows, outFile string) (rowCount int, err error) {
 	file, err := os.Create(outFile)
 	if err != nil {
-		return fmt.Errorf("error creating file %s: %v", outFile, err)
+		return 0, fmt.Errorf("error creating file %s: %v", outFile, err)
 	}
 	defer file.Close()
 
@@ -214,15 +214,16 @@ func writeCSV(rows *sql.Rows, outFile string) error {
 
 	// Write CSV header
 	if err := w.Write([]string{"reach_id", "us_flow", "ds_wse", "boundary_condition"}); err != nil {
-		return err
+		return 0, err
 	}
 
 	for rows.Next() {
+		rowCount++
 		var reachID, usFlow int
 		var dsWse float64
 		var bc string
 		if err := rows.Scan(&reachID, &usFlow, &dsWse, &bc); err != nil {
-			return err
+			return 0, err
 		}
 		record := []string{
 			strconv.Itoa(reachID),
@@ -231,13 +232,13 @@ func writeCSV(rows *sql.Rows, outFile string) error {
 			bc,
 		}
 		if err := w.Write(record); err != nil {
-			return err
+			return 0, err
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return rowCount, nil
 }
 
 func Run(args []string) error {
@@ -336,25 +337,32 @@ func Run(args []string) error {
 	<-doneChan     // wait for the DB writer goroutine
 
 	// 5) Query DB for missing data and write to CSV
-	missingQueries := map[string]string{
-		outFims: queryMissingFims,
-		outRcs:  queryMissingRatingCurves,
+	tasks := []struct {
+		outFile string
+		query   string
+		label   string
+	}{
+		{outFims, queryMissingFims, "FIMs"},
+		{outRcs, queryMissingRatingCurves, "Rating Curves"},
 	}
+	var rowCount int
 
-	for outFile, q := range missingQueries {
+	for _, task := range tasks {
 
-		rows, err := db.Query(q)
+		rows, err := db.Query(task.query)
 		if err != nil {
-			return fmt.Errorf("error executing query for %s: %v", outFile, err)
+			return fmt.Errorf("error executing query for %s: %v", task.outFile, err)
 		}
 		defer rows.Close()
 
-		if err := writeCSV(rows, outFile); err != nil {
-			return fmt.Errorf("error writing %s: %v", outFile, err)
+		if rowCount, err = writeCSV(rows, task.outFile); err != nil {
+			return fmt.Errorf("error writing %s: %v", task.outFile, err)
 		}
+
+		fmt.Printf("Missing %s records found: %d\n", task.label, rowCount)
+		fmt.Printf("Missing %s file create %s\n", task.label, task.outFile)
 	}
 
 	fmt.Println("Validation complete")
-	fmt.Printf("Missing FIMs file created at: %s\nMissing Rating Curves file created at: %s\n", outFims, outRcs)
 	return nil
 }
