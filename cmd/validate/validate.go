@@ -15,6 +15,64 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// Query Constants
+const (
+	queryCreateFIMEntTable = `
+	CREATE TABLE memdb.fim_entries (
+		reach_id INTEGER,
+		us_flow INTEGER,
+		ds_wse REAL,
+		boundary_condition TEXT
+	);
+	`
+
+	queryMissingFims = `
+	SELECT
+		rc.reach_id,
+		rc.us_flow,
+		rc.ds_wse,
+		rc.boundary_condition
+	FROM
+		rating_curves rc
+	LEFT JOIN
+		memdb.fim_entries f
+		ON (rc.reach_id = f.reach_id
+			AND rc.us_flow = f.us_flow
+			AND (CASE
+					WHEN rc.boundary_condition = 'nd' THEN 0
+					ELSE rc.ds_wse
+				END) = f.ds_wse
+			AND rc.boundary_condition = f.boundary_condition)
+	WHERE
+		f.reach_id IS NULL
+	ORDER BY
+		rc.reach_id, rc.boundary_condition, rc.ds_wse, rc.us_flow;
+	`
+
+	queryMissingRatingCurves = `
+	SELECT
+		f.reach_id,
+		f.us_flow,
+		f.ds_wse,
+		f.boundary_condition
+	FROM
+		memdb.fim_entries f
+	LEFT JOIN
+		rating_curves rc
+		ON (f.reach_id = rc.reach_id
+			AND f.us_flow = rc.us_flow
+			AND f.ds_wse = (CASE
+					WHEN f.boundary_condition = 'nd' THEN 0
+					ELSE rc.ds_wse
+				END)
+			AND f.boundary_condition = rc.boundary_condition)
+	WHERE
+		rc.reach_id IS NULL
+	ORDER BY
+		f.reach_id, f.boundary_condition, f.ds_wse, f.us_flow;
+	`
+)
+
 // fimRow represents a single record discovered in the FIM library
 type fimRow struct {
 	reachID           int
@@ -142,113 +200,19 @@ func batchInsertFIMs(db *sql.DB, fimChan <-chan fimRow) error {
 	return tx.Commit()
 }
 
-// writeMissingFims queries rating_curves table minus fim_entries table
-// and write csv file
-func writeMissingFims(db *sql.DB, outFims string) error {
-	query := `
-	SELECT
-		rc.reach_id,
-		rc.us_flow,
-		rc.ds_wse,
-		rc.boundary_condition
-	FROM
-		rating_curves rc
-	LEFT JOIN
-		memdb.fim_entries f
-		ON (rc.reach_id = f.reach_id
-			AND rc.us_flow = f.us_flow
-			AND (CASE
-					WHEN rc.boundary_condition = 'nd' THEN 0
-					ELSE rc.ds_wse
-				END) = f.ds_wse
-			AND rc.boundary_condition = f.boundary_condition)
-	WHERE
-		f.reach_id IS NULL
-	ORDER BY
-		rc.reach_id, rc.boundary_condition, rc.ds_wse, rc.us_flow;
-	`
+// writeCSV is a generic function to write results to CSV
+func writeCSV(rows *sql.Rows, outFile string) error {
 
-	rows, err := db.Query(query)
+	file, err := os.Create(outFile)
 	if err != nil {
-		return fmt.Errorf("error querying missing_fims: %v", err)
-	}
-	defer rows.Close()
-
-	file, err := os.Create(outFims)
-	if err != nil {
-		return fmt.Errorf("error creating missing_fims file: %v", err)
+		return fmt.Errorf("error creating file %s: %v", outFile, err)
 	}
 	defer file.Close()
+
 	w := csv.NewWriter(file)
 	defer w.Flush()
 
-	if err := w.Write([]string{"reach_id", "us_flow", "ds_wse", "boundary_condition"}); err != nil {
-		return err
-	}
-
-	for rows.Next() {
-		var reachID, usFlow int
-		var dsWse float64
-		var bc string
-		if err := rows.Scan(&reachID, &usFlow, &dsWse, &bc); err != nil {
-			return err
-		}
-		record := []string{
-			strconv.Itoa(reachID),
-			strconv.Itoa(usFlow),
-			fmt.Sprintf("%.1f", dsWse),
-			bc,
-		}
-		if err := w.Write(record); err != nil {
-			return err
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	return nil
-}
-
-// writeMissingRatingCurves queries fim_entries table minus rating_curves table
-// and write csv file
-func writeMissingRatingCurves(db *sql.DB, outRcs string) error {
-	query := `
-	SELECT
-		f.reach_id,
-		f.us_flow,
-		f.ds_wse,
-		f.boundary_condition
-	FROM
-		memdb.fim_entries f
-	LEFT JOIN
-		rating_curves rc
-		ON (f.reach_id = rc.reach_id
-			AND f.us_flow = rc.us_flow
-			AND f.ds_wse = (CASE
-					WHEN f.boundary_condition = 'nd' THEN 0
-					ELSE rc.ds_wse
-				END)
-			AND f.boundary_condition = rc.boundary_condition)
-	WHERE
-		rc.reach_id IS NULL
-	ORDER BY
-		f.reach_id, f.boundary_condition, f.ds_wse, f.us_flow;
-	`
-
-	rows, err := db.Query(query)
-	if err != nil {
-		return fmt.Errorf("error querying missing_rating_curves: %v", err)
-	}
-	defer rows.Close()
-
-	file, err := os.Create(outRcs)
-	if err != nil {
-		return fmt.Errorf("error creating missing_rating_curves file: %v", err)
-	}
-	defer file.Close()
-	w := csv.NewWriter(file)
-	defer w.Flush()
-
+	// Write CSV header
 	if err := w.Write([]string{"reach_id", "us_flow", "ds_wse", "boundary_condition"}); err != nil {
 		return err
 	}
@@ -320,12 +284,7 @@ func Run(args []string) error {
 
 	// Create table memdb.fim_entries
 	// to do: move query to a constant at the top of the file
-	_, err = db.Exec(`CREATE TABLE memdb.fim_entries (
-		reach_id INTEGER,
-		us_flow INTEGER,
-		ds_wse REAL,
-		boundary_condition TEXT
-	);`)
+	_, err = db.Exec(queryCreateFIMEntTable)
 	if err != nil {
 		return fmt.Errorf("error creating memdb.fim_entries: %v", err)
 	}
@@ -352,7 +311,7 @@ func Run(args []string) error {
 	sem := make(chan struct{}, concurrent) // limit concurrency to 'cc'
 	// sync/semaphore could also have been used here
 
-	// 4) Find top-level directories (reach folders)
+	// 4) Find top-level directories (reach folders) and process them
 	dirEntries, err := os.ReadDir(absFimLibDir)
 	if err != nil {
 		return fmt.Errorf("error reading fim library directory: %v", err)
@@ -376,14 +335,23 @@ func Run(args []string) error {
 	close(fimChan) // no more FIM rows
 	<-doneChan     // wait for the DB writer goroutine
 
-	// ) Generate two output CSV files:
-	//    - missing_fims: rating_curves minus fim_entries
-	//    - missing_rating_curves: fim_entries minus rating_curves
-	if err := writeMissingFims(db, outFims); err != nil {
-		return err
+	// 5) Query DB for missing data and write to CSV
+	missingQueries := map[string]string{
+		outFims: queryMissingFims,
+		outRcs:  queryMissingRatingCurves,
 	}
-	if err := writeMissingRatingCurves(db, outRcs); err != nil {
-		return err
+
+	for outFile, q := range missingQueries {
+
+		rows, err := db.Query(q)
+		if err != nil {
+			return fmt.Errorf("error executing query for %s: %v", outFile, err)
+		}
+		defer rows.Close()
+
+		if err := writeCSV(rows, outFile); err != nil {
+			return fmt.Errorf("error writing %s: %v", outFile, err)
+		}
 	}
 
 	fmt.Println("Validation complete")
