@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/csv"
 	"flag"
+	"flows2fim/pkg/utils"
 	"fmt"
 	"log"
 	"os"
@@ -85,32 +86,39 @@ type fimRow struct {
 // It sends the parsed data to fimChan channel
 func processReachDir(reachDir, absFimLibDir string, fimChan chan<- fimRow) {
 	filepath.WalkDir(reachDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
+		relPath, _ := filepath.Rel(absFimLibDir, path)
+		if err != nil {
+			log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not process %s: %v", relPath, err)))
+		}
+		if d.IsDir() {
+			// WalkDir would process both directories and files, so we are ignoring files
 			return nil
 		}
+
 		name := d.Name()
 		if strings.HasPrefix(name, "f_") && strings.HasSuffix(name, ".tif") {
 			usFlowStr := strings.TrimSuffix(strings.TrimPrefix(name, "f_"), ".tif")
 			usFlow, convErr := strconv.Atoi(usFlowStr)
 			if convErr != nil {
-				log.Printf("Warning: could not parse us_flow: %s", name)
+				log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse us_flow for %s", relPath)))
 				return nil
 			}
 
-			relPath, _ := filepath.Rel(absFimLibDir, path)
 			parts := strings.Split(relPath, string(filepath.Separator))
-			if len(parts) < 3 {
+			if len(parts) != 3 {
+				log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse %s", relPath)))
 				return nil
 			}
 			reachIDStr := parts[0]
 			dirName := parts[1] // z_XXX
 			reachID, convErr := strconv.Atoi(reachIDStr)
 			if convErr != nil {
-				log.Printf("Warning: could not parse reach_id: %s", reachIDStr)
+				log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse reach_id for %s", relPath)))
 				return nil
 			}
 
 			if !strings.HasPrefix(dirName, "z_") {
+				log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse boundary condition for %s", relPath)))
 				return nil
 			}
 			dirSuffix := strings.TrimPrefix(dirName, "z_")
@@ -125,6 +133,7 @@ func processReachDir(reachDir, absFimLibDir string, fimChan chan<- fimRow) {
 				dsWseStr := strings.ReplaceAll(dirSuffix, "_", ".")
 				dsWseFloat, parseErr := strconv.ParseFloat(dsWseStr, 64)
 				if parseErr != nil {
+					log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse ds_wse for %s", relPath)))
 					return nil
 				}
 				dsWse = dsWseFloat
