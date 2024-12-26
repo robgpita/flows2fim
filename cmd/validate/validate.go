@@ -16,6 +16,45 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+var usage string = `Usage of fim:
+Given a fim library folder and a rating curves database,
+validate there is one to one correspondence between the entries of rating curves table and fim library objects.
+GDAL VSI paths can be used, given GDAL must have access to cloud creds. (Not implemented)
+
+FIM Library Specifications:
+- All maps should have same CRS, Resolution, vertical units (if any), and nodata value
+- Should have following folder structure:
+.
+├── 2821866
+│   ├── z_nd
+│   │   ├── f_10283.tif
+│   │   ├── f_104569.tif
+│   │   ├── f_11199.tif
+│   │   ├── f_112807.tif
+│   ├── z_53_5
+│       ├── f_102921.tif
+│       ├── f_10485.tif
+│       ├── f_111159.tif
+│       ├── f_11309.tif
+
+Database file must have a table 'rating_curves' and contain following columns
+        reach_id INTEGER
+        us_flow REAL
+        us_depth REAL
+        us_wse Real
+        ds_depth REAL
+        ds_wse REAL
+        boundary_condition TEXT CHECK(boundary_condition IN ('nd','kwse'))
+        UNIQUE(reach_id, us_flow, ds_wse, boundary_condition)
+
+
+CLI flag syntax. The following forms are permitted:
+-flag
+--flag   // double dashes are also permitted
+-flag=x
+-flag x  // non-boolean flags only
+Arguments:`
+
 // SQL Query Constants
 const (
 	queryCreateFIMEntTable = `
@@ -86,10 +125,17 @@ type fimRow struct {
 // It sends the parsed data to fimChan channel
 func processReachDir(reachDir, absFimLibDir string, fimChan chan<- fimRow) {
 	filepath.WalkDir(reachDir, func(path string, d os.DirEntry, err error) error {
-		relPath, _ := filepath.Rel(absFimLibDir, path)
 		if err != nil {
-			log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not process %s: %v", relPath, err)))
+			log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not process %s: %v", path, err)))
+			return nil
 		}
+
+		relPath, relErr := filepath.Rel(absFimLibDir, path)
+		if relErr != nil {
+			log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not extract relative path %s: %v", path, relErr)))
+			return nil
+		}
+
 		if d.IsDir() {
 			// WalkDir would process both directories and files, so we are ignoring files
 			return nil
@@ -277,6 +323,10 @@ func writeCSV(rows *sql.Rows, outFile string) (int, error) {
 
 func Run(args []string) error {
 	flags := flag.NewFlagSet("validate", flag.ExitOnError)
+	flags.Usage = func() {
+		fmt.Println(usage)
+		flags.PrintDefaults()
+	}
 
 	var (
 		dbPath     string
