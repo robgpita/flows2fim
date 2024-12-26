@@ -20,3 +20,8 @@ func ColorizeError(text string) string {
 	colored := colorizeString(160, text)
 	return colored
 }
+
+func ColorizeDebug(text string) string {
+	colored := colorizeString(27, text)
+	return colored
+}
