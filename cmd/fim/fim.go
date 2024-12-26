@@ -3,6 +3,7 @@ package fim
 import (
 	"encoding/csv"
 	"flag"
+	"flows2fim/pkg/utils"
 	"fmt"
 	"os"
 	"os/exec"
@@ -45,17 +46,8 @@ var gdalCommands = map[string]string{
 	"tif": "gdalwarp",
 	"cog": "gdalwarp",
 	// not using gdal_merge since gdalwarp allow writing to COG while gdam_merge does not
-	// also, it is more powerful than gdal_merge
+	// also, gdalwarp is more powerful than gdal_merge
 	// also it has consistent name across plateforms unlike gdal_merge vs gdal_merge.py
-}
-
-// Check GDAL tools available checks if gdalbuildvrt is available in the environment.
-func CheckGDALToolAvailable(tool string) bool {
-	cmd := exec.Command(tool, "--version")
-	if err := cmd.Run(); err != nil {
-		return false
-	}
-	return true
 }
 
 func writeFileList(fileList []string) (string, error) {
@@ -109,7 +101,7 @@ func Run(args []string) (gdalArgs []string, err error) {
 	}
 
 	// Check if gdalbuildvrt or GDAL tool is available
-	if !CheckGDALToolAvailable(gdalCommands[outputFormat]) {
+	if !utils.CheckGDALToolAvailable(gdalCommands[outputFormat]) {
 		return []string{}, fmt.Errorf("error: %[1]s is not available. Please install GDAL and ensure %[1]s is in your PATH", gdalCommands[outputFormat])
 	}
 
