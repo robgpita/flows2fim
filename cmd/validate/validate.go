@@ -465,15 +465,16 @@ func Run(args []string) error {
 
 	// 3) Setup concurrency
 	fimChan := make(chan fimRow, 2000) // buffer for discovered rows
-	doneChan := make(chan struct{})
+	var batchWG sync.WaitGroup
 
 	// Single writer goroutine that batch-inserts rows into memdb.fim_entries
+	batchWG.Add(1)
 	go func() {
+		defer batchWG.Done()
 		err := batchInsertFIMs(db, fimChan)
 		if err != nil {
 			log.Printf("Error inserting FIM rows: %v", err)
 		}
-		close(doneChan)
 	}()
 
 	var wg sync.WaitGroup
@@ -516,7 +517,7 @@ func Run(args []string) error {
 	// Wait for all reach processing goroutines to finish
 	wg.Wait()
 	close(fimChan) // no more FIM rows
-	<-doneChan     // wait for the DB writer goroutine
+	batchWG.Wait() // wait for the DB writer goroutine
 
 	// 5) Query DB for missing data and write to CSV
 	tasks := []struct {
