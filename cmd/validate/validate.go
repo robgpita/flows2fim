@@ -485,6 +485,13 @@ func Run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("error reading fim library directory: %v", err)
 	}
+
+	if len(libEntries) == 0 {
+		if strings.HasPrefix(fimLibDir, "/vsi") {
+			return fmt.Errorf("no entries found in VSI path. Does GDAL have access to cloud credentials?")
+		}
+		return fmt.Errorf("no entries found in fim library directory. Not a valid fim library")
+	}
 	log.Print(utils.ColorizeDebug(fmt.Sprintf("Debug: total number of reach dir identified: %d", len(libEntries))))
 
 	var reachDir string
