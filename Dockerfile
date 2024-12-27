@@ -14,3 +14,6 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 RUN git config --global --add safe.directory /app
+
+RUN cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /bin && \
+    chmod +x /bin/gdal_ls.py
