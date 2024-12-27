@@ -102,7 +102,7 @@ func Run(args []string) (gdalArgs []string, err error) {
 
 	// Check if gdalbuildvrt or GDAL tool is available
 	if !utils.CheckGDALToolAvailable(gdalCommands[outputFormat]) {
-		return []string{}, fmt.Errorf("error: %[1]s is not available. Please install GDAL and ensure %[1]s is in your PATH", gdalCommands[outputFormat])
+		return []string{}, fmt.Errorf("%[1]s is not available. Please install GDAL and ensure %[1]s is in your PATH", gdalCommands[outputFormat])
 	}
 
 	if strings.HasPrefix(fimLibDir, "/vsi") || strings.HasPrefix(outputFile, "/vsi") {
