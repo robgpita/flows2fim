@@ -6,8 +6,9 @@ COPY go.mod go.sum ./
 # Download and cache dependencies (assumes go.mod and go.sum are tidy)
 RUN go mod download
 
-
+# zip needed for creating release-assets
 RUN apt-get update && \
+    apt-get install zip -y && \
     apt-get install -y gdal-bin && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
