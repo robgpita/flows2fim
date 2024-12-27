@@ -114,6 +114,8 @@ const (
 	`
 )
 
+var extIgnore = []string{".aux", ".aux.xml", ".ovr", ".xml", ".tfw"}
+
 // fimRow represents a single record discovered in the FIM library
 type fimRow struct {
 	reachID           int
@@ -219,9 +221,15 @@ func processLibEntry(e dirEntry, absFimLibDir string, fimChan chan<- fimRow) {
 	}
 
 	name := filepath.Base(e.path)
-	// Skip non-TIF or non-f_ files
-	if !strings.HasPrefix(name, "f_") || !strings.HasSuffix(name, ".tif") {
-		log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: file does not start with f_ or is not .tif file %s", relPath)))
+	ext := filepath.Ext(name)
+	if utils.SliceContains(extIgnore, ext) {
+		return
+	} else if !strings.HasSuffix(name, ".tif") {
+		log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: file is not .tif file %s", relPath)))
+		return
+	}
+	if !strings.HasSuffix(name, ".tif") {
+		log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: file does not start with f_ %s", relPath)))
 		return
 	}
 
