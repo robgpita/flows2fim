@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -121,79 +122,156 @@ type fimRow struct {
 	boundaryCondition string
 }
 
-// processReachDir parse boundary condition folders (z_XXX) and flow tif files (f_*.tif) for a reach folder.
-// It sends the parsed data to fimChan channel
-func processReachDir(reachDir, absFimLibDir string, fimChan chan<- fimRow) {
-	filepath.WalkDir(reachDir, func(path string, d os.DirEntry, err error) error {
+// dirEntry holds a path + info about whether it's a directory
+type dirEntry struct {
+	path  string
+	isDir bool
+}
+
+// readDir is the wrapper that calls either gatherLocalEntries or gatherCloudEntries
+// to get all paths (files + dirs).
+// If recursive is true, it will recursively list all files and directories.
+func readDir(dir string, recursive bool) ([]dirEntry, error) {
+	var allEntries []dirEntry
+	var err error
+
+	if strings.HasPrefix(dir, "/vsi") {
+		allEntries, err = gatherVSIEntries(dir, recursive)
+	} else {
+		allEntries, err = gatherLocalEntries(dir, recursive)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error gathering entries from %s: %v", dir, err)
+	}
+
+	return allEntries, nil
+}
+
+// gatherLocalEntries uses either os.ReadDir (non-recursive) or filepath.WalkDir (recursive)
+func gatherLocalEntries(dir string, recursive bool) ([]dirEntry, error) {
+	if !recursive {
+		// Non-recursive approach: just top-level entries
+		entries, err := os.ReadDir(dir)
 		if err != nil {
-			log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not process %s: %v", path, err)))
-			return nil
+			return nil, err
 		}
-
-		relPath, relErr := filepath.Rel(absFimLibDir, path)
-		if relErr != nil {
-			log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not extract relative path %s: %v", path, relErr)))
-			return nil
+		var results []dirEntry
+		for _, e := range entries {
+			results = append(results, dirEntry{
+				path:  filepath.Join(dir, e.Name()),
+				isDir: e.IsDir(),
+			})
 		}
+		return results, nil
+	}
 
-		if d.IsDir() {
-			// WalkDir would process both directories and files, so we are ignoring files
-			return nil
+	// Recursive approach with WalkDir
+	var results []dirEntry
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, werr error) error {
+		if werr != nil {
+			return werr
 		}
-
-		name := d.Name()
-		if strings.HasPrefix(name, "f_") && strings.HasSuffix(name, ".tif") {
-			usFlowStr := strings.TrimSuffix(strings.TrimPrefix(name, "f_"), ".tif")
-			usFlow, convErr := strconv.Atoi(usFlowStr)
-			if convErr != nil {
-				log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse us_flow for %s", relPath)))
-				return nil
-			}
-
-			parts := strings.Split(relPath, string(filepath.Separator))
-			if len(parts) != 3 {
-				log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse %s", relPath)))
-				return nil
-			}
-			reachIDStr := parts[0]
-			dirName := parts[1] // z_XXX
-			reachID, convErr := strconv.Atoi(reachIDStr)
-			if convErr != nil {
-				log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse reach_id for %s", relPath)))
-				return nil
-			}
-
-			if !strings.HasPrefix(dirName, "z_") {
-				log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse boundary condition for %s", relPath)))
-				return nil
-			}
-			dirSuffix := strings.TrimPrefix(dirName, "z_")
-
-			var bc string
-			var dsWse float64
-			if dirSuffix == "nd" {
-				bc = "nd"
-				dsWse = 0.0
-			} else {
-				bc = "kwse"
-				dsWseStr := strings.ReplaceAll(dirSuffix, "_", ".")
-				dsWseFloat, parseErr := strconv.ParseFloat(dsWseStr, 64)
-				if parseErr != nil {
-					log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse ds_wse for %s", relPath)))
-					return nil
-				}
-				dsWse = dsWseFloat
-			}
-
-			fimChan <- fimRow{
-				reachID:           reachID,
-				usFlow:            usFlow,
-				dsWse:             dsWse,
-				boundaryCondition: bc,
-			}
-		}
+		results = append(results, dirEntry{path: path, isDir: d.IsDir()})
 		return nil
 	})
+	return results, err
+}
+
+// gatherVSIEntries calls gdal_ls (with or without -r) to list entries in a VSI path
+func gatherVSIEntries(dir string, recursive bool) ([]dirEntry, error) {
+	var args []string
+	if recursive {
+		args = []string{"-r", dir}
+	} else {
+		args = []string{dir}
+	}
+
+	cmd := exec.Command(gdalLSName, args...)
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("error gathering entries from %s: %v", dir, err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	var results []dirEntry
+	for _, line := range lines {
+		if line == "" || !strings.HasPrefix(line, "/") { // ignore lines not starting with /
+			continue
+		}
+		isDir := strings.HasSuffix(line, "/")
+		results = append(results, dirEntry{path: line, isDir: isDir})
+	}
+	return results, nil
+}
+
+// processLibEntry parse boundary condition folders (z_XXX) and flow tif files (f_*.tif) from dirEntry path.
+// It sends the parsed data to fimChan channel
+func processLibEntry(e dirEntry, absFimLibDir string, fimChan chan<- fimRow) {
+	// Skip directories
+	if e.isDir {
+		return
+	}
+
+	relPath, relErr := filepath.Rel(absFimLibDir, e.path)
+	if relErr != nil {
+		log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not extract relative path %s: %v", e.path, relErr)))
+		return
+	}
+
+	name := filepath.Base(e.path)
+	// Skip non-TIF or non-f_ files
+	if !strings.HasPrefix(name, "f_") || !strings.HasSuffix(name, ".tif") {
+		log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: file does not start with f_ or is not .tif file %s", relPath)))
+		return
+	}
+
+	usFlowStr := strings.TrimSuffix(strings.TrimPrefix(name, "f_"), ".tif")
+	usFlow, convErr := strconv.Atoi(usFlowStr)
+	if convErr != nil {
+		log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse us_flow from %s", relPath)))
+		return
+	}
+
+	parts := strings.Split(relPath, string(os.PathSeparator))
+	if len(parts) != 3 {
+		log.Print(utils.ColorizeError(fmt.Sprintf("Error: invalid path structure for %s", relPath)))
+		return
+	}
+	reachIDStr := parts[0]
+	dirName := parts[1] // z_XXX
+	reachID, err := strconv.Atoi(reachIDStr)
+	if err != nil {
+		log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse reachID for %s", relPath)))
+		return
+	}
+	if !strings.HasPrefix(dirName, "z_") {
+		log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse boundary condition for %s", relPath)))
+		return
+	}
+	dirSuffix := strings.TrimPrefix(dirName, "z_")
+
+	var bc string
+	var dsWse float64
+	if dirSuffix == "nd" {
+		bc = "nd"
+		dsWse = 0.0
+	} else {
+		bc = "kwse"
+		dsWseStr := strings.ReplaceAll(dirSuffix, "_", ".")
+		dsWseFloat, parseErr := strconv.ParseFloat(dsWseStr, 64)
+		if parseErr != nil {
+			log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not parse ds_wse for %s", relPath)))
+			return
+		}
+		dsWse = dsWseFloat
+	}
+
+	fimChan <- fimRow{
+		reachID:           reachID,
+		usFlow:            usFlow,
+		dsWse:             dsWse,
+		boundaryCondition: bc,
+	}
 }
 
 // batchInsertFIMs insert FIM rows in batches
@@ -353,6 +431,12 @@ func Run(args []string) error {
 		return fmt.Errorf("missing required flags")
 	}
 
+	// Check if gdalbuildvrt or GDAL tool is available
+	if strings.HasPrefix(fimLibDir, "/vsi") && !utils.CheckGDALToolAvailable(gdalLSName) {
+		return fmt.Errorf(`%[1]s is not available. Please install GDAL and ensure %[1]s is in your PATH. %[1]s is not available in PATH
+		by default. Please refer to docs for instructions on how to add it to Path`, gdalLSName)
+	}
+
 	// 1) Open the input DB ( we won't modify it).
 	// to do: check if db exists
 	db, err := sql.Open("sqlite", dbPath)
@@ -397,20 +481,27 @@ func Run(args []string) error {
 	// sync/semaphore could also have been used here
 
 	// 4) Find top-level directories (reach folders) and process them
-	dirEntries, err := os.ReadDir(absFimLibDir)
+	libEntries, err := readDir(absFimLibDir, false)
 	if err != nil {
 		return fmt.Errorf("error reading fim library directory: %v", err)
 	}
+	log.Print(utils.ColorizeDebug(fmt.Sprintf("Debug: total number of reach dir identified: %d", len(libEntries))))
+
 	var reachDir string
-	for _, de := range dirEntries {
-		if de.IsDir() {
-			reachDir = filepath.Join(absFimLibDir, de.Name())
+	for _, de := range libEntries {
+		if de.isDir {
 			wg.Add(1)
 			sem <- struct{}{} // Acquire concurrency token
 			go func(reachDir string) {
 				defer wg.Done()
 				defer func() { <-sem }() // Release token
-				processReachDir(reachDir, absFimLibDir, fimChan)
+				reachEntries, err := readDir(de.path, true)
+				if err != nil {
+					log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not read reach directory %s: %v", de.path, err)))
+				}
+				for _, e := range reachEntries {
+					processLibEntry(e, absFimLibDir, fimChan)
+				}
 			}(reachDir)
 		}
 	}
