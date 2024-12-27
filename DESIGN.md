@@ -1,0 +1,11 @@
+## Design Decisions
+
+### Validate
+1. A  `-o_<type>` convention is used to allow for multiple outputs across subcommands.
+2. An in-memory SQLite database is attached in read-only mode, ensuring the input database is not altered.
+3. Batch inserts through a single goroutine are employed to minimize concurrency issues with SQLite and to reduce the number of round trips. This is necessary since consistency is desired over speed.
+4. A single SQL query with rc_exist and fim_exist columns is relied upon, allowing the database to handle processing instead of in-memory go logic.
+5. CSV rows are written one by one to avoid substantial memory usage at the end of processing.
+6. Specified output files, even if empty, are generated to keep API consistent.
+7. Atomic writes with a temporary file are performed for CSVs so no partial CSVs remain if errors occur.
+8. Local directories are not processed with gdal_ls, preserving fast local operations and avoiding unnecessary dependencies.
