@@ -228,7 +228,7 @@ func processLibEntry(e dirEntry, absFimLibDir string, fimChan chan<- fimRow) {
 		log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: file is not .tif file %s", relPath)))
 		return
 	}
-	if !strings.HasSuffix(name, ".tif") {
+	if !strings.HasPrefix(name, "f_") {
 		log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: file does not start with f_ %s", relPath)))
 		return
 	}
@@ -345,7 +345,7 @@ func batchInsertFIMs(db *sql.DB, fimChan <-chan fimRow) error {
 // writeCSV is a generic function to write results to CSV.
 // It is atomic i.e. it either succeeds or no file is created.
 // It returns number of data rows written in CSV.
-func writeCSV(rows *sql.Rows, outFile string) (int, error) {
+func writeCSV(rows *sql.Rows, outFile string, skipEmpty bool) (int, error) {
 
 	// On the same filesystem, os.Rename is atomic so will create a temp file and rename it later.
 	outDir := filepath.Dir(outFile)
@@ -374,14 +374,12 @@ func writeCSV(rows *sql.Rows, outFile string) (int, error) {
 		if err := rows.Scan(&reachID, &usFlow, &dsWse, &bc); err != nil {
 			return 0, fmt.Errorf("error scanning row: %v", err)
 		}
-
-		record := []string{
+		if err := w.Write([]string{
 			strconv.Itoa(reachID),
 			strconv.Itoa(usFlow),
 			fmt.Sprintf("%.1f", dsWse),
 			bc,
-		}
-		if err := w.Write(record); err != nil {
+		}); err != nil {
 			return 0, fmt.Errorf("error writing CSV record: %v", err)
 		}
 		rowCount++
@@ -392,18 +390,20 @@ func writeCSV(rows *sql.Rows, outFile string) (int, error) {
 
 	w.Flush()
 	if err := w.Error(); err != nil {
-		return 0, fmt.Errorf("error flushing CSV writer: %v", err)
+		return 0, fmt.Errorf("error flushing CSV: %v", err)
 	}
 
 	if err := tempFile.Close(); err != nil {
 		return 0, fmt.Errorf("error closing temp file: %v", err)
 	}
 
-	if err := os.Rename(tempFilePath, outFile); err != nil {
-		return 0, fmt.Errorf("error renaming temp file %s to %s: %v",
-			tempFilePath, outFile, err)
+	if skipEmpty && rowCount == 0 {
+		return 0, nil
 	}
 
+	if err := os.Rename(tempFilePath, outFile); err != nil {
+		return 0, fmt.Errorf("error renaming temp file %s to %s: %v", tempFilePath, outFile, err)
+	}
 	return rowCount, nil
 }
 
@@ -420,6 +420,7 @@ func Run(args []string) error {
 		outFims    string
 		outRcs     string
 		concurrent int
+		skipEmpty  bool
 	)
 
 	flags.StringVar(&dbPath, "db", "", "Path to the rating curves database file")
@@ -427,6 +428,7 @@ func Run(args []string) error {
 	flags.StringVar(&outFims, "o_fims", "missing_fims.csv", "Output CSV for rating curve entries missing corresponding FIM files")
 	flags.StringVar(&outRcs, "o_rcs", "missing_rating_curves.csv", "Output CSV for FIM entries missing corresponding rating curve records")
 	flags.IntVar(&concurrent, "cc", 25, "Concurrent Count, number of top-level reach directories to process concurrently (default 25)")
+	flags.BoolVar(&skipEmpty, "skip_empty", false, "If true, do not create an empty output CSV file")
 
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("error parsing flags: %v", err)
@@ -479,8 +481,7 @@ func Run(args []string) error {
 	batchWG.Add(1)
 	go func() {
 		defer batchWG.Done()
-		err := batchInsertFIMs(db, fimChan)
-		if err != nil {
+		if err := batchInsertFIMs(db, fimChan); err != nil {
 			log.Printf("Error inserting FIM rows: %v", err)
 		}
 	}()
@@ -536,22 +537,21 @@ func Run(args []string) error {
 		{outFims, queryMissingFims, "FIMs"},
 		{outRcs, queryMissingRatingCurves, "Rating Curves"},
 	}
-	var rowCount int
-
 	for _, task := range tasks {
-
 		rows, err := db.Query(task.query)
 		if err != nil {
 			return fmt.Errorf("error executing query for %s: %v", task.outFile, err)
 		}
 		defer rows.Close()
 
-		if rowCount, err = writeCSV(rows, task.outFile); err != nil {
+		rowCount, err := writeCSV(rows, task.outFile, skipEmpty)
+		if err != nil {
 			return fmt.Errorf("error writing %s: %v", task.outFile, err)
 		}
-
 		fmt.Printf("Number of missing %s records found: %d\n", task.label, rowCount)
-		fmt.Printf("Missing %s file created at %s\n", task.label, task.outFile)
+		if rowCount > 0 || !skipEmpty {
+			fmt.Printf("Missing %s file created at %s\n", task.label, task.outFile)
+		}
 	}
 
 	fmt.Println("Validation complete")
