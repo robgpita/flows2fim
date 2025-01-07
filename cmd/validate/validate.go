@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"bufio"
+	"bytes"
 	"database/sql"
 	"encoding/csv"
 	"flag"
@@ -194,7 +196,15 @@ func gatherVSIEntries(dir string, recursive bool) ([]dirEntry, error) {
 		return nil, fmt.Errorf("error gathering entries from %s: %v", dir, err)
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		log.Print(utils.ColorizeError(fmt.Sprintf("Error: error reading lines from %s %s %v", gdalLSName, dir, err)))
+	}
+
 	var results []dirEntry
 	for _, line := range lines {
 		if line == "" || !strings.HasPrefix(line, "/") { // ignore lines not starting with /
@@ -503,13 +513,20 @@ func Run(args []string) error {
 		return fmt.Errorf("error reading fim library directory: %v", err)
 	}
 
-	if len(libEntries) == 0 {
+	var reachDirs []dirEntry
+	for _, de := range libEntries {
+		if de.isDir {
+			reachDirs = append(reachDirs, de)
+		}
+	}
+
+	if len(reachDirs) == 0 {
 		if strings.HasPrefix(fimLibDir, "/vsi") {
 			return fmt.Errorf("no entries found in VSI path. Does GDAL have access to cloud credentials?")
 		}
 		return fmt.Errorf("no entries found in fim library directory. Not a valid fim library")
 	}
-	log.Print(utils.ColorizeDebug(fmt.Sprintf("Debug: total number of reach dir identified: %d", len(libEntries))))
+	log.Print(utils.ColorizeDebug(fmt.Sprintf("Debug: total number of reach dir identified: %d", len(reachDirs))))
 
 	var reachDir string
 	for _, de := range libEntries {
