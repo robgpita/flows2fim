@@ -23,6 +23,7 @@ var usage string = `Usage of fim:
 Given a fim library folder and a rating curves database,
 validate there is one to one correspondence between the entries of rating curves table and fim library objects.
 GDAL VSI paths can be used, given GDAL must have access to cloud creds. (Not implemented)
+Intermediate folders for output files are created if they do not exist.
 
 FIM Library Specifications:
 - All maps should have same CRS, Resolution, vertical units (if any), and nodata value
@@ -358,8 +359,7 @@ func batchInsertFIMs(db *sql.DB, fimChan <-chan fimRow) error {
 func writeCSV(rows *sql.Rows, outFile string, skipEmpty bool) (int, error) {
 
 	// On the same filesystem, os.Rename is atomic so will create a temp file and rename it later.
-	outDir := filepath.Dir(outFile)
-	tempFile, err := os.CreateTemp(outDir, "~f2f_*.tmp")
+	tempFile, err := os.CreateTemp("", "~f2f_*.tmp")
 	if err != nil {
 		return 0, fmt.Errorf("error creating temp file: %v", err)
 	}
@@ -411,6 +411,10 @@ func writeCSV(rows *sql.Rows, outFile string, skipEmpty bool) (int, error) {
 		return 0, nil
 	}
 
+	outDir := filepath.Dir(outFile)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return 0, fmt.Errorf("could not create directories for %s: %v", outFile, err)
+	}
 	if err := os.Rename(tempFilePath, outFile); err != nil {
 		return 0, fmt.Errorf("error renaming temp file %s to %s: %v", tempFilePath, outFile, err)
 	}
