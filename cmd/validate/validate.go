@@ -448,8 +448,10 @@ func Run(args []string) error {
 	}
 
 	// 1) Open the input DB ( we won't modify it).
-	// to do: check if db exists
-	db, err := sql.Open("sqlite", dbPath)
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		return fmt.Errorf("database file does not exist: %s", dbPath)
+	}
+	db, err := sql.Open("sqlite", dbPath+"?mode=ro")
 	if err != nil {
 		return fmt.Errorf("error opening DB: %v", err)
 	}
