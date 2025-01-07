@@ -470,9 +470,14 @@ func Run(args []string) error {
 		return fmt.Errorf("error creating memdb.fim_entries: %v", err)
 	}
 
-	absFimLibDir, err := filepath.Abs(fimLibDir)
-	if err != nil {
-		return fmt.Errorf("error getting absolute path for fim library: %v", err)
+	var absFimLibDir string
+	if strings.HasPrefix(fimLibDir, "/vsi") {
+		absFimLibDir = fimLibDir
+	} else {
+		absFimLibDir, err = filepath.Abs(fimLibDir)
+		if err != nil {
+			return fmt.Errorf("error getting absolute path for fim library: %v", err)
+		}
 	}
 
 	// 3) Setup concurrency
