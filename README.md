@@ -3,12 +3,13 @@
 ## Overview
 `flows2fim` is a command line utility program that creates composite FIMs for different flow conditions utilizing input FIM libraries and rating curves database.
 
-It has following commands.
+It has the following commands.
  - `controls`: Given a flow file and a rating curves database, create a control table of reach flows and downstream boundary conditions.
  - `fim`: Given a control table and a fim library folder. Create a flood inundation map for the control conditions.
+  - validate: Given a FIM library folder and a rating curves database, validate there is one-to-one correspondence between the entries of the rating curves table and FIM library objects.
 
 Dependencies:
- - 'fim' command needs access to 'gdalbuildvrt' and 'gdalwarp' program. GDAL must be installed separately and made available in Path.
+ - 'fim' and 'validate' commands need access to GDAL. GDAL must be installed separately and made available in Path.
 
 Units:
 Current support is for English units. The flow values must be in `cfs`
