@@ -2,6 +2,7 @@
 ![alt text](image.png)
 ## Overview
 `flows2fim` is a command line utility program that creates composite FIMs for different flow conditions utilizing input FIM libraries and rating curves database.
+`flows2fim` can work directly with FIM libraries stored on the cloud.
 
 It has the following basic commands:
 
@@ -18,9 +19,7 @@ The following advanced commands are available but are not commonly used:
 ### Units:
 Current support is for English units. The flow values must be in `cfs`
 
-## For Users
-
-### Getting Started
+## Quick Start For Users
 
 1. Download `flows2fim` executables from [Releases](https://github.com/ar-siddiqui/flows2fim/releases).
 
@@ -41,9 +40,7 @@ Current support is for English units. The flow values must be in `cfs`
 
 1. To create Depth VRT run `flows2fim fim -lib "Baxter/library" -c "Baxter/controls_100yr.csv" -o "Baxter/fim_100yr.vrt"`
 
-## For Developers
-
-### Getting Started
+## Quick Start For Developers
 
 1. Clone the repository and perform the following steps from the root of the repo.
 
@@ -55,10 +52,17 @@ Current support is for English units. The flow values must be in `cfs`
 
 4. Run `go run main.go fim -lib "testdata/Baxter/library" -c "testdata/Baxter/controls_100yr.csv" -o "testdata/Baxter/fim_100yr.vrt"` This will create a VRT file. VRT can be tested by loading in QGIS.
 
-### Testing
+#### Testing
 
 1. Run `go test ./...` to run automated tests.
 
-### Building
+#### Building
 
 Run `./scripts/build-linux-amd64.sh` This will place the executable in `builds/linux-amd64`.
+
+## Installation
+[Installation](INSTALL.md)
+
+## Examples
+[Examples](EXAMPLES.md)
+
