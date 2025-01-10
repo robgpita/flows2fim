@@ -230,6 +230,10 @@ func processLibEntry(e dirEntry, absFimLibDir string, fimChan chan<- fimRow) {
 		log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not extract relative path %s: %v", e.path, relErr)))
 		return
 	}
+	// On windows relPath will have backslashes, convert to forward slashes for /vsi paths
+	if strings.HasPrefix(absFimLibDir, "/vsi") {
+		relPath = filepath.ToSlash(relPath)
+	}
 
 	name := filepath.Base(e.path)
 	ext := filepath.Ext(name)
@@ -526,7 +530,7 @@ func Run(args []string) error {
 
 	if len(reachDirs) == 0 {
 		if strings.HasPrefix(fimLibDir, "/vsi") {
-			return fmt.Errorf("no entries found in VSI path. Does GDAL have access to cloud credentials?")
+			return fmt.Errorf("no entries found in VSI path. Is it a valid FIM library? Does GDAL have access to cloud credentials?")
 		}
 		return fmt.Errorf("no entries found in fim library directory. Not a valid fim library")
 	}
