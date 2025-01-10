@@ -359,11 +359,33 @@ func batchInsertFIMs(db *sql.DB, fimChan <-chan fimRow) error {
 
 // writeCSV is a generic function to write results to CSV.
 // It is atomic i.e. it either succeeds or no file is created.
+// It create intermediate directories if they do not exist.
 // It returns number of data rows written in CSV.
 func writeCSV(rows *sql.Rows, outFile string, skipEmpty bool) (int, error) {
+	// Try reading the first row to check if there's data. We don't want to create empty intermediate directories.
+	// An approach that was first adopted and discarded was to write to a temp file in tmp folder and then rename it only if rows exist,
+	// but that approach cause inter-device rename error on conatinerized environment with file mounts.
+
+	rowCount := 0
+	if !rows.Next() {
+		// No row was found if rows.Err() == nil.
+		if err := rows.Err(); err != nil {
+			return 0, fmt.Errorf("error reading rows: %v", err)
+		}
+		if skipEmpty {
+			return 0, nil
+		}
+	} else {
+		rowCount++
+	}
+
+	// Create intermediate directories if they do not exist
+	if err := os.MkdirAll(filepath.Dir(outFile), 0755); err != nil {
+		return 0, fmt.Errorf("could not create directories for %s: %v", outFile, err)
+	}
 
 	// On the same filesystem, os.Rename is atomic so will create a temp file and rename it later.
-	tempFile, err := os.CreateTemp("", "~f2f_*.tmp")
+	tempFile, err := os.CreateTemp(filepath.Dir(outFile), "~f2f_*.tmp")
 	if err != nil {
 		return 0, fmt.Errorf("error creating temp file: %v", err)
 	}
@@ -375,31 +397,48 @@ func writeCSV(rows *sql.Rows, outFile string, skipEmpty bool) (int, error) {
 	}()
 
 	w := csv.NewWriter(tempFile)
-	rowCount := 0
-
 	if err := w.Write([]string{"reach_id", "us_flow", "ds_wse", "boundary_condition"}); err != nil {
 		return 0, fmt.Errorf("error writing CSV header: %v", err)
 	}
 
-	for rows.Next() {
+	if rowCount != 0 {
 		var reachID, usFlow int
 		var dsWse float64
 		var bc string
 		if err := rows.Scan(&reachID, &usFlow, &dsWse, &bc); err != nil {
-			return 0, fmt.Errorf("error scanning row: %v", err)
+			return 0, fmt.Errorf("error scanning first row: %v", err)
 		}
+
 		if err := w.Write([]string{
 			strconv.Itoa(reachID),
 			strconv.Itoa(usFlow),
 			fmt.Sprintf("%.1f", dsWse),
 			bc,
 		}); err != nil {
-			return 0, fmt.Errorf("error writing CSV record: %v", err)
+			return 0, fmt.Errorf("error writing first row to CSV: %v", err)
 		}
-		rowCount++
-	}
-	if err := rows.Err(); err != nil {
-		return 0, fmt.Errorf("error from rows iteration: %v", err)
+
+		// Process remaining rows
+		for rows.Next() {
+			var reachID, usFlow int
+			var dsWse float64
+			var bc string
+			if err := rows.Scan(&reachID, &usFlow, &dsWse, &bc); err != nil {
+				return 0, fmt.Errorf("error scanning row: %v", err)
+			}
+			if err := w.Write([]string{
+				strconv.Itoa(reachID),
+				strconv.Itoa(usFlow),
+				fmt.Sprintf("%.1f", dsWse),
+				bc,
+			}); err != nil {
+				return 0, fmt.Errorf("error writing CSV record: %v", err)
+			}
+			rowCount++
+		}
+		if err := rows.Err(); err != nil {
+			return 0, fmt.Errorf("error from rows iteration: %v", err)
+		}
 	}
 
 	w.Flush()
@@ -411,14 +450,6 @@ func writeCSV(rows *sql.Rows, outFile string, skipEmpty bool) (int, error) {
 		return 0, fmt.Errorf("error closing temp file: %v", err)
 	}
 
-	if skipEmpty && rowCount == 0 {
-		return 0, nil
-	}
-
-	outDir := filepath.Dir(outFile)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		return 0, fmt.Errorf("could not create directories for %s: %v", outFile, err)
-	}
 	if err := os.Rename(tempFilePath, outFile); err != nil {
 		return 0, fmt.Errorf("error renaming temp file %s to %s: %v", tempFilePath, outFile, err)
 	}
