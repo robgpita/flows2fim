@@ -22,7 +22,7 @@ import (
 var usage string = `Usage of fim:
 Given a fim library folder and a rating curves database,
 validate there is one to one correspondence between the entries of rating curves table and fim library objects.
-GDAL VSI paths can be used, given GDAL must have access to cloud creds. (Not implemented)
+GDAL VSI paths can be used, given GDAL must have access to cloud creds.
 Intermediate folders for output files are created if they do not exist.
 
 FIM Library Specifications:
