@@ -18,9 +18,10 @@ var usage string = `Usage of flows2fim:
 Commands:
   - controls: Given a flow file and a rating curves database, create a control table of reach flows and downstream boundary conditions.
   - fim: Given a control table and a fim library folder, create a flood inundation map for the control conditions.
+  - validate: Given a fim library folder and a rating curves database, validate there is one to one correspondence between the entries of rating curves table and fim library objects.
 
 Notes:
-  - 'fim' command needs access to GDAL programs. They must be installed separately and available in the system's PATH.
+  - 'fim' and 'validate' commands need access to GDAL programs. They must be installed separately and available in the system's PATH.
 `
 
 var (

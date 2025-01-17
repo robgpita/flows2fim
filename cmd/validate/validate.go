@@ -1,6 +1,8 @@
 package validate
 
 import (
+	"bufio"
+	"bytes"
 	"database/sql"
 	"encoding/csv"
 	"flag"
@@ -20,7 +22,8 @@ import (
 var usage string = `Usage of fim:
 Given a fim library folder and a rating curves database,
 validate there is one to one correspondence between the entries of rating curves table and fim library objects.
-GDAL VSI paths can be used, given GDAL must have access to cloud creds. (Not implemented)
+GDAL VSI paths can be used, given GDAL must have access to cloud creds.
+Intermediate folders for output files are created if they do not exist.
 
 FIM Library Specifications:
 - All maps should have same CRS, Resolution, vertical units (if any), and nodata value
@@ -194,7 +197,15 @@ func gatherVSIEntries(dir string, recursive bool) ([]dirEntry, error) {
 		return nil, fmt.Errorf("error gathering entries from %s: %v", dir, err)
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		log.Print(utils.ColorizeError(fmt.Sprintf("Error: error reading lines from %s %s %v", gdalLSName, dir, err)))
+	}
+
 	var results []dirEntry
 	for _, line := range lines {
 		if line == "" || !strings.HasPrefix(line, "/") { // ignore lines not starting with /
@@ -219,6 +230,10 @@ func processLibEntry(e dirEntry, absFimLibDir string, fimChan chan<- fimRow) {
 		log.Print(utils.ColorizeError(fmt.Sprintf("Error: could not extract relative path %s: %v", e.path, relErr)))
 		return
 	}
+	// On windows relPath will have backslashes, convert to forward slashes for /vsi paths
+	if strings.HasPrefix(absFimLibDir, "/vsi") {
+		relPath = filepath.ToSlash(relPath)
+	}
 
 	name := filepath.Base(e.path)
 	ext := filepath.Ext(name)
@@ -228,7 +243,7 @@ func processLibEntry(e dirEntry, absFimLibDir string, fimChan chan<- fimRow) {
 		log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: file is not .tif file %s", relPath)))
 		return
 	}
-	if !strings.HasSuffix(name, ".tif") {
+	if !strings.HasPrefix(name, "f_") {
 		log.Print(utils.ColorizeWarning(fmt.Sprintf("Warning: file does not start with f_ %s", relPath)))
 		return
 	}
@@ -344,12 +359,33 @@ func batchInsertFIMs(db *sql.DB, fimChan <-chan fimRow) error {
 
 // writeCSV is a generic function to write results to CSV.
 // It is atomic i.e. it either succeeds or no file is created.
+// It create intermediate directories if they do not exist.
 // It returns number of data rows written in CSV.
-func writeCSV(rows *sql.Rows, outFile string) (int, error) {
+func writeCSV(rows *sql.Rows, outFile string, skipEmpty bool) (int, error) {
+	// Try reading the first row to check if there's data. We don't want to create empty intermediate directories.
+	// An approach that was first adopted and discarded was to write to a temp file in tmp folder and then rename it only if rows exist,
+	// but that approach cause inter-device rename error on conatinerized environment with file mounts.
+
+	rowCount := 0
+	if !rows.Next() {
+		// No row was found if rows.Err() == nil.
+		if err := rows.Err(); err != nil {
+			return 0, fmt.Errorf("error reading rows: %v", err)
+		}
+		if skipEmpty {
+			return 0, nil
+		}
+	} else {
+		rowCount++
+	}
+
+	// Create intermediate directories if they do not exist
+	if err := os.MkdirAll(filepath.Dir(outFile), 0755); err != nil {
+		return 0, fmt.Errorf("could not create directories for %s: %v", outFile, err)
+	}
 
 	// On the same filesystem, os.Rename is atomic so will create a temp file and rename it later.
-	outDir := filepath.Dir(outFile)
-	tempFile, err := os.CreateTemp(outDir, "~f2f_*.tmp")
+	tempFile, err := os.CreateTemp(filepath.Dir(outFile), "~f2f_*.tmp")
 	if err != nil {
 		return 0, fmt.Errorf("error creating temp file: %v", err)
 	}
@@ -361,38 +397,53 @@ func writeCSV(rows *sql.Rows, outFile string) (int, error) {
 	}()
 
 	w := csv.NewWriter(tempFile)
-	rowCount := 0
-
 	if err := w.Write([]string{"reach_id", "us_flow", "ds_wse", "boundary_condition"}); err != nil {
 		return 0, fmt.Errorf("error writing CSV header: %v", err)
 	}
 
-	for rows.Next() {
+	if rowCount != 0 {
 		var reachID, usFlow int
 		var dsWse float64
 		var bc string
 		if err := rows.Scan(&reachID, &usFlow, &dsWse, &bc); err != nil {
-			return 0, fmt.Errorf("error scanning row: %v", err)
+			return 0, fmt.Errorf("error scanning first row: %v", err)
 		}
 
-		record := []string{
+		if err := w.Write([]string{
 			strconv.Itoa(reachID),
 			strconv.Itoa(usFlow),
 			fmt.Sprintf("%.1f", dsWse),
 			bc,
+		}); err != nil {
+			return 0, fmt.Errorf("error writing first row to CSV: %v", err)
 		}
-		if err := w.Write(record); err != nil {
-			return 0, fmt.Errorf("error writing CSV record: %v", err)
+
+		// Process remaining rows
+		for rows.Next() {
+			var reachID, usFlow int
+			var dsWse float64
+			var bc string
+			if err := rows.Scan(&reachID, &usFlow, &dsWse, &bc); err != nil {
+				return 0, fmt.Errorf("error scanning row: %v", err)
+			}
+			if err := w.Write([]string{
+				strconv.Itoa(reachID),
+				strconv.Itoa(usFlow),
+				fmt.Sprintf("%.1f", dsWse),
+				bc,
+			}); err != nil {
+				return 0, fmt.Errorf("error writing CSV record: %v", err)
+			}
+			rowCount++
 		}
-		rowCount++
-	}
-	if err := rows.Err(); err != nil {
-		return 0, fmt.Errorf("error from rows iteration: %v", err)
+		if err := rows.Err(); err != nil {
+			return 0, fmt.Errorf("error from rows iteration: %v", err)
+		}
 	}
 
 	w.Flush()
 	if err := w.Error(); err != nil {
-		return 0, fmt.Errorf("error flushing CSV writer: %v", err)
+		return 0, fmt.Errorf("error flushing CSV: %v", err)
 	}
 
 	if err := tempFile.Close(); err != nil {
@@ -400,10 +451,8 @@ func writeCSV(rows *sql.Rows, outFile string) (int, error) {
 	}
 
 	if err := os.Rename(tempFilePath, outFile); err != nil {
-		return 0, fmt.Errorf("error renaming temp file %s to %s: %v",
-			tempFilePath, outFile, err)
+		return 0, fmt.Errorf("error renaming temp file %s to %s: %v", tempFilePath, outFile, err)
 	}
-
 	return rowCount, nil
 }
 
@@ -420,6 +469,7 @@ func Run(args []string) error {
 		outFims    string
 		outRcs     string
 		concurrent int
+		skipEmpty  bool
 	)
 
 	flags.StringVar(&dbPath, "db", "", "Path to the rating curves database file")
@@ -427,6 +477,7 @@ func Run(args []string) error {
 	flags.StringVar(&outFims, "o_fims", "missing_fims.csv", "Output CSV for rating curve entries missing corresponding FIM files")
 	flags.StringVar(&outRcs, "o_rcs", "missing_rating_curves.csv", "Output CSV for FIM entries missing corresponding rating curve records")
 	flags.IntVar(&concurrent, "cc", 25, "Concurrent Count, number of top-level reach directories to process concurrently (default 25)")
+	flags.BoolVar(&skipEmpty, "skip_empty", false, "If true, do not create an empty output CSV file")
 
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("error parsing flags: %v", err)
@@ -446,8 +497,10 @@ func Run(args []string) error {
 	}
 
 	// 1) Open the input DB ( we won't modify it).
-	// to do: check if db exists
-	db, err := sql.Open("sqlite", dbPath)
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		return fmt.Errorf("database file does not exist: %s", dbPath)
+	}
+	db, err := sql.Open("sqlite", dbPath+"?mode=ro")
 	if err != nil {
 		return fmt.Errorf("error opening DB: %v", err)
 	}
@@ -466,9 +519,14 @@ func Run(args []string) error {
 		return fmt.Errorf("error creating memdb.fim_entries: %v", err)
 	}
 
-	absFimLibDir, err := filepath.Abs(fimLibDir)
-	if err != nil {
-		return fmt.Errorf("error getting absolute path for fim library: %v", err)
+	var absFimLibDir string
+	if strings.HasPrefix(fimLibDir, "/vsi") {
+		absFimLibDir = fimLibDir
+	} else {
+		absFimLibDir, err = filepath.Abs(fimLibDir)
+		if err != nil {
+			return fmt.Errorf("error getting absolute path for fim library: %v", err)
+		}
 	}
 
 	// 3) Setup concurrency
@@ -479,8 +537,7 @@ func Run(args []string) error {
 	batchWG.Add(1)
 	go func() {
 		defer batchWG.Done()
-		err := batchInsertFIMs(db, fimChan)
-		if err != nil {
+		if err := batchInsertFIMs(db, fimChan); err != nil {
 			log.Printf("Error inserting FIM rows: %v", err)
 		}
 	}()
@@ -495,13 +552,20 @@ func Run(args []string) error {
 		return fmt.Errorf("error reading fim library directory: %v", err)
 	}
 
-	if len(libEntries) == 0 {
+	var reachDirs []dirEntry
+	for _, de := range libEntries {
+		if de.isDir {
+			reachDirs = append(reachDirs, de)
+		}
+	}
+
+	if len(reachDirs) == 0 {
 		if strings.HasPrefix(fimLibDir, "/vsi") {
-			return fmt.Errorf("no entries found in VSI path. Does GDAL have access to cloud credentials?")
+			return fmt.Errorf("no entries found in VSI path. Is it a valid FIM library? Does GDAL have access to cloud credentials?")
 		}
 		return fmt.Errorf("no entries found in fim library directory. Not a valid fim library")
 	}
-	log.Print(utils.ColorizeDebug(fmt.Sprintf("Debug: total number of reach dir identified: %d", len(libEntries))))
+	log.Print(utils.ColorizeDebug(fmt.Sprintf("Debug: total number of reach dir identified: %d", len(reachDirs))))
 
 	var reachDir string
 	for _, de := range libEntries {
@@ -536,22 +600,21 @@ func Run(args []string) error {
 		{outFims, queryMissingFims, "FIMs"},
 		{outRcs, queryMissingRatingCurves, "Rating Curves"},
 	}
-	var rowCount int
-
 	for _, task := range tasks {
-
 		rows, err := db.Query(task.query)
 		if err != nil {
 			return fmt.Errorf("error executing query for %s: %v", task.outFile, err)
 		}
 		defer rows.Close()
 
-		if rowCount, err = writeCSV(rows, task.outFile); err != nil {
+		rowCount, err := writeCSV(rows, task.outFile, skipEmpty)
+		if err != nil {
 			return fmt.Errorf("error writing %s: %v", task.outFile, err)
 		}
-
 		fmt.Printf("Number of missing %s records found: %d\n", task.label, rowCount)
-		fmt.Printf("Missing %s file created at %s\n", task.label, task.outFile)
+		if rowCount > 0 || !skipEmpty {
+			fmt.Printf("Missing %s file created at %s\n", task.label, task.outFile)
+		}
 	}
 
 	fmt.Println("Validation complete")
