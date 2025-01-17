@@ -1,15 +1,60 @@
-1. Download `flows2fim` executables from [Releases](https://github.com/ar-siddiqui/flows2fim/releases).
+# Installation Instructions
 
-1. Install `GDAL` if you don't already have it. GDAL can be installed in a variety of ways.
-    - On Windows: The easiest way is through `OSGeo4W` installer https://trac.osgeo.org/osgeo4w/#QuickStartforOSGeo4WUsers
-    - On Ubuntu Linux: Run `apt-get update && apt-get install -y gdal-bin`
 
-1. Make sure `flows2fim` and `GDAL` both are available in your Path.
-   - On Windows: The easiest way is to place the downloaded `flows2fim.exe` file from step 1 in `C:\OSGeo4W\bin` and then use `OSGeo4W Shell` for executing `flows2fim`
-   - On Linux: The simplest option is to place the downloaded `flows2fim` file in `/bin` folder
+## Docker
+Coming soon
 
-1. Add `gdal_ls` to Path (only required if using `validate` command with FIM library stored on the cloud).
-    - On Windows:
-         - Copy `C:\OSGeo4W\apps\Python312\Lib\site-packages\osgeo_utils\gdal_ls.py` to `C:\OSGeo4W\apps\Python312\Scripts` directory
-         - Copy `C:\OSGeo4W\apps\Python312\Scripts\gdal_merge.bat` as `C:\OSGeo4W\apps\Python312\Scripts\gdal_ls.bat` and replace all occurences of `gdal_merge.py` with `gdal_ls.py` in the file
-   - On Linux: Run `cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /bin && chmod +x /bin/gdal_ls.py`
+## Windows
+
+1. **Install GDAL**
+   - The easiest way is via [**OSGeo4W**](https://trac.osgeo.org/osgeo4w/#QuickStartforOSGeo4WUsers)
+
+2. **Setup flows2fim**
+    - Go to the [**Releases**](https://github.com/ar-siddiqui/flows2fim/releases) page and download the `flows2fim-windows-amd64.zip`
+    - Unzip and copy `flows2fim.exe` into `C:\OSGeo4W\bin`
+
+3. **(Optional) Enable `gdal_ls`**
+   - This step is **only needed** if you plan to use the `flows2fim validate` command with a FIM library on cloud storage.
+
+   _Your actual paths might be slightly different based on the version of python_
+   - Copy `C:\OSGeo4W\apps\Python312\Lib\site-packages\osgeo_utils\gdal_ls.py` to `C:\OSGeo4W\apps\Python312\Scripts`.
+   - In `C:\OSGeo4W\apps\Python312\Scripts`, make a copy of `gdal_merge.bat` → `gdal_ls.bat`.
+   - Open `gdal_ls.bat` and replace all occurrences of `gdal_merge.py` with `gdal_ls.py`.
+
+4. **Verify**
+    - Open the **OSGeo4W Shell**.
+    - Run `flows2fim --version` to confirm everything works.
+    - Run `gdalinfo --version` to confirm everything works.
+    - (Optional) Run `gdal_ls --version` if you set it up.
+
+
+## Linux
+
+1. **Install GDAL**
+
+    _For Ubuntu_
+   ```bash
+   sudo apt-get update && sudo apt-get install -y gdal-bin
+   ```
+
+2. **Setup flows2fim**
+    - Go to the [**Releases**](https://github.com/ar-siddiqui/flows2fim/releases) page and download the `flows2fim-linux-amd64.tar.gz`
+   - Extract it and move to a directory in PATH (e.g., `/usr/local/bin`) and make it executable:
+     ```bash
+     tar -xvf flows2fim-linux-amd64.tar.gz
+     sudo mv flows2fim /usr/local/bin/
+     sudo chmod +x /usr/local/bin/flows2fim
+     ```
+
+3. **(Optional) Enable `gdal_ls`**
+   - Only required if using `flows2fim validate` with FIM libraries stored on cloud.
+   - On Ubuntu/Debian systems:
+     ```bash
+     sudo cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /usr/local/bin
+     sudo chmod +x /usr/local/bin/gdal_ls.py
+     ```
+
+4. **Verify**
+    - Run `flows2fim --version` to confirm everything works.
+    - Run `gdalinfo --version` to confirm everything works.
+    - (Optional) Run `gdal_ls --version` if you set it up.

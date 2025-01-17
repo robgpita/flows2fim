@@ -9,28 +9,18 @@ It has the following basic commands:
  - `controls`: Given a flow file and a rating curves database, create a control table of reach flows and downstream boundary conditions.
  - `fim`: Given a control table and a fim library folder. Create a flood inundation map for the control conditions.
 
-The following advanced commands are available but are not commonly used:
+The following advanced commands are available but are not commonly needed:
  - `validate`: Given a FIM library folder and a rating curves database, validate there is one-to-one correspondence between the entries of the rating curves table and FIM library objects.
 
-### Notes:
- - `fim` command needs access to GDAL. GDAL must be installed separately and made available in Path.
- - `validate` command needs access to the `gdal_ls` program, which requires additional setup steps not mentioned in this document.
+### Dependencies:
+ - `GDAL` must be installed and available in PATH
 
 ### Units:
 Current support is for English units. The flow values must be in `cfs`
 
 ## Quick Start For Users
 
-1. Download `flows2fim` executables from [Releases](https://github.com/ar-siddiqui/flows2fim/releases).
-
-1. Install `GDAL` if you don't already have it.
-   > GDAL can be installed in a variety of ways.
-   > - On Windows: The easiest way is through `OSGeo4W` installer https://trac.osgeo.org/osgeo4w/#QuickStartforOSGeo4WUsers
-   > - On Ubuntu Linux: Run `apt-get update && apt-get install -y gdal-bin`
-
-1. Make sure `flows2fim` and `GDAL` both are available in your Path.
-   > - On Windows: The easiest way is to place the downloaded `flows2fim.exe` file from step 1 in `C:\OSGeo4W\bin` and then use `OSGeo4W Shell` for the next steps
-   > - On Linux: The simplest option is to place the downloaded `flows2fim` file in `/bin` folder
+1. Follow install instructions at [INSTALL.md](INSTALL.md)
 
 1. Get familiar using `flows2fim -h` and `flows2fim COMMAND -h`.
 
