@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download OSGeo4W installer script
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: osgeo4w-installer-script
           path: ./osgeo4w_installer.bat
