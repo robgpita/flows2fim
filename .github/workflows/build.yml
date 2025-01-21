@@ -82,11 +82,13 @@ jobs:
     
 #     - name: Build Flows2FIM
 #       run: |
-#         go build -o flows2fim cmd/flows2fim/main.go
-        
-#     - name: Create Executable
+#       if: matrix.os == 'windows'
+#         ./build windows.sh
+
+#     - name: Build Flows2FIM
 #       run: |
-#         GOOS=${ matrix.os } GOARCH=amd64 go build -o flows2fim
+#       if: matrix.os == 'linux'
+#         ./build linux.sh
           
 #     - name: Test Flows2FIM
 #       run: ./flows2fim controls -db -f -o -sids
