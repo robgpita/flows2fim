@@ -2,9 +2,9 @@ name: Build Flows2FIM
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - ci
+  push:
+    branches:
+      - ci
   # release:
   #   types: [created, edited, published]
 
