@@ -1,20 +1,44 @@
-name: Build and Test Flows2FIM
+name: Install GDAL
 
-on: 
+on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - ci
-  # pull_request:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./scripts
+  install-gdal:
+    runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - name: Run build script
-        run: ./scripts/build-linux-amd64.sh
-  test:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download OSGeo4W installer script
+        uses: actions/download-artifact@v2
+        with:
+          name: osgeo4w-installer-script
+          path: ./osgeo4w_installer.bat
+
+      - name: Run OSGeo4W installer
+        run: |
+          cmd.exe /c call ./osgeo4w_installer.bat ^
+              --package-list=gdal ^
+              --package-list=python3-gdal ^
+              --package-list=proj ^
+              --package-list=proj-data ^
+              --resolve-dependencies=yes ^
+              --auto-install=yes ^
+              --auto-select=yes ^
+              --quiet=yes
+
+      - name: Set environment variables
+        run: |
+          setx GDAL_VERSION 3.7.2 /M
+          setx GDAL_DRIVER_PATH "C:\OSGeo4W\apps\gdal\lib\gdalplugins" /M
+          setx GDAL_DATA "C:\OSGeo4W\apps\gdal\share\gdal" /M
+          setx PROJ_LIB "C:\OSGeo4W\share\proj" /M
+
+      - name: Create symlink for Python bindings
+        run: |
+          mklink /D "C:\Program Files\Python39\Lib\site-packages\osgeo" "C:\OSGeo4W\apps\Python39\Lib\site-packages\osgeo"
+
+      - name: Verify GDAL installation
+        run: gdalinfo --version
