@@ -2,7 +2,9 @@ name: Install GDAL Windows
 
 on:
   workflow_dispatch:
-
+  push:
+    branches:
+      - ci
 jobs:
   install-gdal:
     runs-on: windows-latest
