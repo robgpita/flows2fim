@@ -1,0 +1,107 @@
+name: Test Flows2FIM
+
+on: 
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - ci
+  # pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: flows2fim-${{ matrix.os }}
+
+    - name: Make executable
+      if: matrix.os == 'ubuntu-latest'
+      run: chmod +x flows2fim
+
+    - name: Test flows2fim controls
+      run: ./flows2fim controls --param1 value1 --param2 value2
+
+    - name: Test flows2fim fim
+      run: ./flows2fim fim --param3 value3 --param4 value4
+
+    - name: Test flows2fim validate
+      run: ./flows2fim validate --param5 value5 --param6 value6
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results-${{ matrix.os }}
+        path: test-results/
+
+
+
+# name: Test Flows2FIM
+
+# on:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     outputs:
+#       binary-path: ${{ steps.build.outputs.binary_path }}
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: Setup Go
+#         uses: actions/setup-go@v3
+#         with:
+#           go-version: '1.20'
+#       - name: Build
+#         run: |
+#           go build -o flows2fim ./cmd/flows2fim
+#           echo "Binary path: ${PWD}/flows2fim" >> $GITHUB_OUTPUT
+#         id: build
+
+#   test-controls:
+#     needs: build
+#     runs-on: ${{ matrix.os }}
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest, windows-latest]
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: Run Tests
+#         env:
+#           FLOWS2FIM_PATH: ${{ needs.build.outputs.binary-path }}
+#         run: |
+#           # Ensure we're using the built binary
+#           cp ${{ needs.build.outputs.binary-path }} flows2fim
+#           # Run the test command
+#           ./flows2fim controls -db -f -o output.txt -sids 12345
+#           # Add more test cases here
+#           # Check for expected output or error conditions
+
+#   test-fim:
+#     needs: build
+#     runs-on: ${{ matrix.os }}
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest, windows-latest]
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: Run Tests
+#         env:
+#           FLOWS2FIM_PATH: ${{ needs.build.outputs.binary-path }}
+#         run: |
+#           # Ensure we're using the built binary
+#           cp ${{ needs.build.outputs.binary-path }} flows2fim
+#           # Run the test command
+#           ./flows2fim fim -c config.json -o output.txt
+#           # Add more test cases here
+#           # Check for expected output or error conditions
