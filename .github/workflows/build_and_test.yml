@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v2
         
       - name: Install OSGeo4W
-        uses: echoix/setup-OSGeo4W@v0.2.0
+        uses: osgeo4w/action@master
         with:
           packages: gdal, proj, geos, geotiff, libtiff, openjpeg, pngwriter, curl, libxml2, libxslt, sqlite, pthreads, netcdf, hdf4, hdf5, json-c, libspatialite, libwebp, liblzma, libmspack, libgeotiff, libexpat, libxml2, libxerces, libxerces-c, libxerces-c-dev, libxslt, libcurl, libcurl4-openssl-dev, libgdal, libgdal-dev, libgeos, libgeos-dev, libgeotiff, libgeotiff-dev, libhdf4, libhdf4-alt-dev, libhdf5, libhdf5-serial, libhdf5-openmpi, libjpeg-dev, libpng-dev, libpq-dev, libspatialite, libspatialite-dev, libtiff, libtiff-dev, libwebp, libwebp-dev, liblzma-dev, libmspack-dev, libgeotiff, libgeotiff-dev, libexpat1-dev, libxml2-dev, libxerces-c-dev, libxerces-c2-dev, libxslt-dev, libcurl4-openssl-dev, libgdal-dev, libgeos-dev, libgeotiff-dev, libhdf4-alt-dev, libhdf5-dev, libjpeg-dev, libpng-dev, libpq-dev, libspatialite-dev, libtiff-dev, libwebp-dev, liblzma-dev, libmspack-dev, libgeotiff-dev, libexpat1-dev, libxml2-dev, libxerces-c-dev, libxerces-c2-dev, libxslt-dev, libcurl4-openssl-dev, libgdal-dev, libgeos-dev, libhdf4-alt-dev, libhdf5-dev, libjpeg-dev, libpng-dev, libpq-dev, libspatialite-dev, libtiff-dev, libwebp-dev, liblzma-dev, libmspack-dev, geos, proj, proj-data, python3-gdal, python3-core, python3-pip, python3-setuptools, python3-wheel
         
