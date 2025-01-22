@@ -13,18 +13,19 @@ inputs:
   linux_buildpath: builds/linux-amd64
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  upload:
+    name: Generate Build Artifacts
+
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_version: [linux-amd64, windows-amd64]
-    # defaults:
-    #   run:
-    #     working-directory: ./scripts
+    
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout Repo
+      uses: actions/checkout@v4
 
     - name: Set up Go
       uses: actions/setup-go@v5
@@ -32,42 +33,50 @@ jobs:
         go-version: '1.20'
       run: go version
 
-    - name: Run Windows build script
-      if: ${{ matrix.os }} == 'windows-latest'
-      run: |
-        echo "Building for Windows..."
-        ./scripts/build-windows-amd64.sh
-
-    - name: Create Windows artifact
-      if: ${{ matrix.os }} == 'windows-latest'
+    - name: Build
+      run: ./scripts/build-${{ matrix.version }}.sh > flows2fim
+    - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: flows2fim-${{ matrix.os }}
-        path: ${{ inputs.windows_buildpath }}
+        name: flows2fim-${{ matrix.version }}
+        path: flows2fim
+
+    # - name: Run Windows build script
+    #   if: ${{ matrix.os }} == 'windows-latest'
+    #   run: |
+    #     echo "Building for Windows..."
+    #     ./scripts/build-windows-amd64.sh
+
+    # - name: Create Windows artifact
+    #   if: ${{ matrix.os }} == 'windows-latest'
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: flows2fim-${{ matrix.os }}
+    #     path: ${{ inputs.windows_buildpath }}
         
-    - name: Upload Windows artifacts
-      if: ${{ matrix.os }} == 'windows-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: flows2fim-${{ matrix.os }}
-        path: ${{ inputs.windows_buildpath }}
+    # - name: Upload Windows artifacts
+    #   if: ${{ matrix.os }} == 'windows-latest'
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: flows2fim-${{ matrix.os }}
+    #     path: ${{ inputs.windows_buildpath }}
 
-    - name: Run Linux build script
-      if: ${{ matrix.os }} == 'ubuntu-latest'
-      run: |
-         echo "Building for Linux..."
-        ./scripts/build-linux-amd64.sh
+    # - name: Run Linux build script
+    #   if: ${{ matrix.os }} == 'ubuntu-latest'
+    #   run: |
+    #      echo "Building for Linux..."
+    #     ./scripts/build-linux-amd64.sh
 
-    - name: Create Linux artifact
-      if: ${{ matrix.os }} == 'ubuntu-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-artifact
-        path: ${{ inputs.linux_buildpath }}
+    # - name: Create Linux artifact
+    #   if: ${{ matrix.os }} == 'ubuntu-latest'
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: linux-artifact
+    #     path: ${{ inputs.linux_buildpath }}
       
-    - name: Upload Linux artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: flows2fim-${{ matrix.os }}
-        path: ${{ inputs.linux_buildpath }}
+    # - name: Upload Linux artifacts
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: flows2fim-${{ matrix.os }}
+    #     path: ${{ inputs.linux_buildpath }}
 
