@@ -16,6 +16,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_version: [linux-amd64, windows-amd64]
+        build_location: []
     
     runs-on: ${{ matrix.os }}
 
@@ -31,13 +32,12 @@ jobs:
 
     - name: Build
       run: |
-        mkdir artifacts
-        ./scripts/build-${{ matrix.build_version }}.sh > artifacts
+        ./scripts/build-${{ matrix.build_version }}.sh
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.build_version }}
-        path: artifacts
+        path: builds/${{ matrix.build_version }}
 
     # - name: Run Windows build script
     #   if: ${{ matrix.os }} == 'windows-latest'
