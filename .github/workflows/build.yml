@@ -46,8 +46,8 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.os }}
-        path: ${windows_artifact.path}
-        
+        path: ${{ windows_artifact.path }}
+
     - name: Run Linux build script
       if: matrix.os == 'ubuntu-latest'
       run: |
@@ -65,5 +65,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.os }}
-        path: ${linux_artifact.path}
+        path: ${{ linux_artifact.path }}
 
