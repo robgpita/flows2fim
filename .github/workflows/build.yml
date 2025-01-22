@@ -15,10 +15,10 @@ jobs:
     strategy:
       matrix:
         include:
-        -os: ubuntu-latest
-          build_version: linux-amd64
-        -os: windows-latest  
-          build_version: windows-amd64
+          - os: ubuntu-latest
+            build_version: linux-amd64
+          - os: windows-latest  
+            build_version: windows-amd64
     
     runs-on: ${{ matrix.os }}
 
