@@ -8,6 +8,10 @@ on:
   # release:
   #   types: [created, edited, published]
 
+inputs:
+  windows_buildpath: builds/windows-amd64
+  linux_buildpath: builds/linux-amd64
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -39,14 +43,14 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.os }}
-        path: builds/windows-amd64
+        path: ${{ inputs.windows_buildpath }}
         
     - name: Upload Windows artifacts
       if: matrix.os == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.os }}
-        path: ${{ windows_artifact.path }}
+        path: ${{ inputs.windows_buildpath }}
 
     - name: Run Linux build script
       if: matrix.os == 'ubuntu-latest'
@@ -59,11 +63,11 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: linux-artifact
-        path: builds/linux-amd64
+        path: ${{ inputs.linux_buildpath }}
       
     - name: Upload Linux artifacts
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.os }}
-        path: ${{ linux_artifact.path }}
+        path: ${{ inputs.linux_buildpath }}
 
