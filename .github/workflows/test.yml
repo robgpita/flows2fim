@@ -47,10 +47,10 @@ jobs:
     #     echo "$GITHUB_PATH"
     #     echo "$PATH"
     - name: Add flows2fim to path
-        run: |
-          mkdir -p $HOME/.local/bin
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          cp ${{ github.workspace }}/${{ matrix.build_version }}/flows2fim $HOME/.local/bin/flows2fim
+      run: |
+        mkdir -p $HOME/.local/bin
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        cp ${{ github.workspace }}/${{ matrix.build_version }}/flows2fim $HOME/.local/bin/flows2fim
 
     - name: Verify flows2fim is available
       if: ${{ matrix.os }} == 'ubuntu-latest'
