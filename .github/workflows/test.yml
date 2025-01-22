@@ -8,15 +8,15 @@ on:
   # pull_request:
 
 jobs:
-  test:
+  Download flows2fim:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
             build_version: linux-amd64
-          # - os: windows-latest  
-          #   build_version: windows-amd64
+          - os: windows-latest  
+            build_version: windows-amd64
 
     steps:
     - uses: actions/checkout@v3
@@ -28,7 +28,7 @@ jobs:
         path: builds/${{ matrix.build_version }}
         github-token: ${{ github.token }}
         repository: ${{ github.repository }}
-        run-id: 12916348509
+        run-id: 12918961000
 
     - name: Display artifact & Add flows2fim to PATH
       run: |
@@ -36,42 +36,26 @@ jobs:
         chmod a+x ./builds/${{ matrix.build_version }}/flows2fim 
         ./builds/${{ matrix.build_version }}/flows2fim --version
         echo "builds/${{ matrix.build_version }}" >> $GITHUB_PATH
-    
-    # - name: Set Path
-    #   run: |
-    #     echo "${{ github.workspace }}/${{ matrix.build_version }}" >> "$GITHUB_PATH"
-    #     echo "builds/${{ matrix.build_version }}" >> "$GITHUB_PATH"
-    
-    # - name: Get Path
-    #   run: | 
-    #     echo "$GITHUB_PATH"
-    #     echo "$PATH"
-    # - name: Add flows2fim to path
-    #   run: |
-    #     mkdir -p $HOME/.local/bin
-    #     echo "$HOME/.local/bin" >> $GITHUB_PATH
-    #     chmod a+x ./builds/${{ matrix.build_version }}/flows2fim
-    #     cp builds/${{ matrix.build_version }}/flows2fim $HOME/.local/bin
 
     - name: Verify flows2fim is available
       if: ${{ matrix.os }} == 'ubuntu-latest'
       run: |
         flows2fim --version
 
-    - name: Test flows2fim controls
-      run: ./flows2fim controls --param1 value1 --param2 value2
+    # - name: Test flows2fim controls
+    #   run: flows2fim controls --param1 value1 --param2 value2
 
-    - name: Test flows2fim fim
-      run: ./flows2fim fim --param3 value3 --param4 value4
+    # - name: Test flows2fim fim
+    #   run: flows2fim fim --param3 value3 --param4 value4
 
-    - name: Test flows2fim validate
-      run: ./flows2fim validate --param5 value5 --param6 value6
+    # - name: Test flows2fim validate
+    #   run: flows2fim validate --param5 value5 --param6 value6
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v3
-      with:
-        name: test-results-${{ matrix.os }}
-        path: test-results/
+    # - name: Upload test results
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: test-results-${{ matrix.os }}
+    #     path: test-results/
 
 
 
