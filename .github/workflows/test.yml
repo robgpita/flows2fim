@@ -33,9 +33,9 @@ jobs:
     - name: Display artifact 
       run: |
         ls -R builds/${{ matrix.build_version }}
-        cp builds/${{ matrix.build_version }}/flows2fim 
-        echo "HOME: $HOME"
-        echo "github.workspace: ${{ github.workspace }}"
+        # cp builds/${{ matrix.build_version }}/flows2fim 
+        # echo "HOME: $HOME"
+        # echo "github.workspace: ${{ github.workspace }}"
     
     # - name: Set Path
     #   run: |
@@ -50,7 +50,7 @@ jobs:
       run: |
         mkdir -p $HOME/.local/bin
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        cp ${{ github.workspace }}/${{ matrix.build_version }}/flows2fim $HOME/.local/bin/flows2fim
+        cp builds/${{ matrix.build_version }}/flows2fim $HOME/.local/bin/flows2fim
 
     - name: Verify flows2fim is available
       if: ${{ matrix.os }} == 'ubuntu-latest'
