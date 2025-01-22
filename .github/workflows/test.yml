@@ -12,7 +12,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            build_version: linux-amd64
+          # - os: windows-latest  
+          #   build_version: windows-amd64
 
     steps:
     - uses: actions/checkout@v3
@@ -21,18 +25,28 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: flows2fim-${{ matrix.os }}
-        path: flows2fim
+        path: builds/${{ matrix.build_version }}
         gihub-token: ${{ github.token }}
         repository: ${{ github.repository }}
-        run-id: #######
+        run-id: 12915035030
 
     - name: Display artifact 
       run: |
-        ls -R artifacts/flows2fim
+        ls -R builds/${{ matrix.build_version }}
+    
+    - name: Set Path
+        run: |
+          echo "builds/${{ matrix.build_version }}" >> $GITHUB_PATH
+    
+    - name: Get Path
+        run: |
+          echo $GITHUB_PATH
 
     - name: Make executable
-      if: matrix.os == 'ubuntu-latest'
-      run: chmod +x flows2fim
+      if: ${{ matrix.os }} == 'ubuntu-latest'
+      run: |
+        chmod +x flows2fim
+        flows2fim --version
 
     - name: Test flows2fim controls
       run: ./flows2fim controls --param1 value1 --param2 value2
@@ -51,30 +65,7 @@ jobs:
 
 
 
-# name: Test Flows2FIM
 
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
-
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
-#     outputs:
-#       binary-path: ${{ steps.build.outputs.binary_path }}
-#     steps:
-#       - uses: actions/checkout@v3
-#       - name: Setup Go
-#         uses: actions/setup-go@v3
-#         with:
-#           go-version: '1.20'
-#       - name: Build
-#         run: |
-#           go build -o flows2fim ./cmd/flows2fim
-#           echo "Binary path: ${PWD}/flows2fim" >> $GITHUB_OUTPUT
-#         id: build
 
 #   test-controls:
 #     needs: build

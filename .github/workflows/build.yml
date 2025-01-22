@@ -39,7 +39,7 @@ jobs:
         CONTAINER_ID=$(docker ps -q | head -n 1)
         if [ -n "$CONTAINER_ID" ]; then
           docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-${{ matrix.build_version }}.sh"  
-          docker-compose down
+          docker compose down
         else
           echo "No running containers found"
           exit 1
