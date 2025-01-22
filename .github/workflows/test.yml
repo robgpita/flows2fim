@@ -34,6 +34,7 @@ jobs:
       run: |
         ls -R builds/${{ matrix.build_version }}
         echo "HOME: $HOME"
+        echo "github.workspace: ${{ github.workspace }}"
     
     - name: Set Path
       run: echo "$HOME/builds/${{ matrix.build_version }}" >> "$GITHUB_PATH"
