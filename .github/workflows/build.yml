@@ -30,7 +30,9 @@ jobs:
       # run: go version
 
     - name: Build
-      run: ./scripts/build-${{ matrix.build_version }}.sh > artifacts/flows2fim
+      run: |
+        mkdir artifacts/flows2fim
+        ./scripts/build-${{ matrix.build_version }}.sh > artifacts/flows2fim
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
