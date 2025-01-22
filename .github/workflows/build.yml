@@ -17,8 +17,8 @@ jobs:
         include:
           - os: ubuntu-latest
             build_version: linux-amd64
-          - os: windows-latest  
-            build_version: windows-amd64
+          # - os: windows-latest  
+          #   build_version: windows-amd64
     
     runs-on: ${{ matrix.os }}
 
@@ -27,12 +27,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Docker Compose
-      uses: actions/setup-docker@v3
-    
-    # - name: Set up Docker Compose
-    #   run: |
-    #     sudo apt-get update
-    #     sudo apt-get install -y docker-compose
+      uses: docker/setup-buildx-action@v3
 
     - name: Run Docker Compose
       run: |
