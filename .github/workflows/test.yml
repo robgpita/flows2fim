@@ -24,7 +24,7 @@ jobs:
     - name: Download artifact
       uses: actions/download-artifact@v4
       with:
-        name: flows2fim-${{ matrix.os }}
+        name: flows2fim-${{ matrix.build_version }}
         path: builds/${{ matrix.build_version }}
         gihub-token: ${{ github.token }}
         repository: ${{ github.repository }}
