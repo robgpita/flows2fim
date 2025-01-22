@@ -33,6 +33,7 @@ jobs:
     - name: Display artifact 
       run: |
         ls -R builds/${{ matrix.build_version }}
+        chmod a+x ./builds/${{ matrix.build_version }}/flows2fim 
         ./builds/${{ matrix.build_version }}/flows2fim --version
         # cp builds/${{ matrix.build_version }}/flows2fim
         # echo "HOME: $HOME"
