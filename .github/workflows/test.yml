@@ -2,9 +2,9 @@ name: Test Flows2FIM
 
 on: 
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - ci
+  push:
+    branches:
+      - ci
   # pull_request:
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
         path: builds/${{ matrix.build_version }}
         gihub-token: ${{ github.token }}
         repository: ${{ github.repository }}
-        run-id: 12915035030
+        run-id: 12916348509
 
     - name: Display artifact 
       run: |
