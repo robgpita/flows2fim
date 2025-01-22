@@ -30,11 +30,12 @@ jobs:
         repository: ${{ github.repository }}
         run-id: 12916348509
 
-    - name: Display artifact 
+    - name: Display artifact & Add flows2fim to PATH
       run: |
         ls -R builds/${{ matrix.build_version }}
         chmod a+x ./builds/${{ matrix.build_version }}/flows2fim 
         ./builds/${{ matrix.build_version }}/flows2fim --version
+        echo "builds/${{ matrix.build_version }}" >> $GITHUB_PATH
     
     # - name: Set Path
     #   run: |
@@ -45,12 +46,12 @@ jobs:
     #   run: | 
     #     echo "$GITHUB_PATH"
     #     echo "$PATH"
-    - name: Add flows2fim to path
-      run: |
-        mkdir -p $HOME/.local/bin
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-        chmod a+x ./builds/${{ matrix.build_version }}/flows2fim
-        cp builds/${{ matrix.build_version }}/flows2fim $HOME/.local/bin
+    # - name: Add flows2fim to path
+    #   run: |
+    #     mkdir -p $HOME/.local/bin
+    #     echo "$HOME/.local/bin" >> $GITHUB_PATH
+    #     chmod a+x ./builds/${{ matrix.build_version }}/flows2fim
+    #     cp builds/${{ matrix.build_version }}/flows2fim $HOME/.local/bin
 
     - name: Verify flows2fim is available
       if: ${{ matrix.os }} == 'ubuntu-latest'
