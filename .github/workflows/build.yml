@@ -17,6 +17,8 @@ jobs:
         include:
           - os: ubuntu-latest
             build_version: linux-amd64
+          - os: ubuntu-latest
+            build_version: windows-amd64
           # - os: windows-latest  
           #   build_version: windows-amd64
     
@@ -44,15 +46,6 @@ jobs:
           echo "No running containers found"
           exit 1
         fi
-
-    # - name: Set up Go
-    #   uses: actions/setup-go@v5
-    #   with:
-    #     go-version: '1.23'
-
-    # - name: Build 
-    #   run: |
-    #     ./scripts/build-${{ matrix.build_version }}.sh
   
     - name: Upload
       uses: actions/upload-artifact@v4
