@@ -33,11 +33,8 @@ jobs:
     - name: Display artifact 
       run: |
         ls -R builds/${{ matrix.build_version }}
-        chmod a+x ./builds/${{ matrix.build_version }}/flows2fim 
-        ./builds/${{ matrix.build_version }}/flows2fim --version
-        # cp builds/${{ matrix.build_version }}/flows2fim
-        # echo "HOME: $HOME"
-        # echo "github.workspace: ${{ github.workspace }}"
+        # chmod a+x ./builds/${{ matrix.build_version }}/flows2fim 
+        # ./builds/${{ matrix.build_version }}/flows2fim --version
     
     # - name: Set Path
     #   run: |
@@ -52,13 +49,14 @@ jobs:
       run: |
         mkdir -p $HOME/.local/bin
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        cp builds/${{ matrix.build_version }}/flows2fim $HOME/.local/bin/flows2fim
+        chmod a+x ./builds/${{ matrix.build_version }}/flows2fim
+        cp builds/${{ matrix.build_version }}/flows2fim $HOME/.local/bin
 
     - name: Verify flows2fim is available
       if: ${{ matrix.os }} == 'ubuntu-latest'
       run: |
         chmod +x flows2fim
-        $HOME/.local/bin/flows2fim --version
+        ./flows2fim --version
 
     - name: Test flows2fim controls
       run: ./flows2fim controls --param1 value1 --param2 value2
