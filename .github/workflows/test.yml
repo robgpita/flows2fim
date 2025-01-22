@@ -26,7 +26,7 @@ jobs:
       with:
         name: flows2fim-${{ matrix.build_version }}
         path: builds/${{ matrix.build_version }}
-        gihub-token: ${{ github.token }}
+        github-token: ${{ github.token }}
         repository: ${{ github.repository }}
         run-id: 12916348509
 
