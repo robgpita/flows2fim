@@ -20,12 +20,24 @@ jobs:
         with:
           packages: gdal-devel
       
-      - name: Show OSGeo4W root
-        run: echo "${{ steps.setup-osgeo4w.outputs.root }}"
+      # - name: Show OSGeo4W root
+      #   run: echo "${{ steps.setup-osgeo4w.outputs.root }}"
+
+      # - name: Install gdal
+      #   if: matrix.os == 'windows-latest'
+      #   run: | 
+      #     choco install gdal
+      #     gdalinfo --version
 
       - name: Set PATH
         run: |
           setx PATH "%PATH%;C:\OSGeo4W\bin"
-        
+          setx GDAL_DATA "C:\OSGeo4W\share\gdal"
+          setx GDAL_PATH "C:\OSGeo4W64\share\gdal"
+          setx PROJ_LIB "C:\OSGeo4W\share\proj"
+
+      - name: Refresh env
+        run: refreshenv
+
       - name: Verify GDAL installation
         run: gdalinfo --version

@@ -2,9 +2,9 @@ name: Build Flows2FIM
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - ci
+  push:
+    branches:
+      - ci
   # release:
   #   types: [created, edited, published]
 
@@ -14,100 +14,56 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-    defaults:
-      run:
-        working-directory: ./scripts
+    # defaults:
+    #   run:
+    #     working-directory: ./scripts
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: '1.20'
-
-    - name: Install GDAL
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gdal-bin libgdal-dev
-        echo "$(gdal-config --prefix)/bin" >> $GITHUB_PATH
-    
-    - name: Install GDAL (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        choco install gdal
-        echo "C:\Program Files\GDAL" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      run: go version
 
     - name: Run Windows build script
       if: matrix.os == 'windows-latest'
       run: |
-        ./build-windows-amd64.sh
-  
+        echo "Building for Windows..."
+        ./scripts/build-windows-amd64.sh
+
+    - name: Create Windows artifact
+      if: matrix.os == 'windows-latest'
+      id: windows_artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: flows2fim-${{ matrix.os }}
+        path: builds/windows-amd64
+        
+    - name: Upload Windows artifacts
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: flows2fim-${{ matrix.os }}
+        path: ${windows_artifact.path}
+
     - name: Run Linux build script
       if: matrix.os == 'ubuntu-latest'
       run: |
-        ./build-linux-amd64.sh
+         echo "Building for Linux..."
+        ./scripts/build-linux-amd64.sh
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v3
+    - name: Create Linux artifact
+      id: linux_artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-artifact
+        path: builds/linux-amd64
+      
+    - name: Upload Linux artifacts
+      uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.os }}
-        path: flows2fim*
+        path: ${linux_artifact.path}
 
-
-
-# name: Build Flows2FIM
-
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
-
-# jobs:
-#   build-and-test:
-#     runs-on: ${{ matrix.os }}
-#     strategy:
-#       matrix:
-#         os: [ ubuntu-latest, windows-latest ]
-    
-#     steps:
-#     - uses: actions/checkout@v3
-    
-#     - name: Set up Go
-#       uses: actions/setup-go@v3
-#       with:
-#         go-version: 1.20
-    
-#     - name: Build Flows2FIM
-#       run: |
-#       if: matrix.os == 'windows'
-#         ./build windows.sh
-
-#     - name: Build Flows2FIM
-#       run: |
-#       if: matrix.os == 'linux'
-#         ./build linux.sh
-          
-#     - name: Test Flows2FIM
-#       run: ./flows2fim controls -db -f -o -sids
-#       if: matrix.os == 'linux'
-      
-#     - name: Test Flows2FIM (Windows)
-#       run: .\flows2fim controls -db -f -o -sids
-#       if: matrix.os == 'windows'
-      
-#     - name: Test Flows2FIM (Linux)
-#       run: ./flows2fim fim -c -o
-#       if: matrix.os == 'linux'
-      
-#     - name: Test Flows2FIM (Windows)
-#       run: .\flows2fim fim -c -o
-#       if: matrix.os == 'windows'
-      
-#     - name: Upload Artifacts
-#       uses: actions/upload-artifact@v3
-#       with:
-#         name: flows2fim-executable
-#         path: flows2fim
