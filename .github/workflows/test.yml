@@ -32,8 +32,8 @@ jobs:
 
     - name: Display artifact 
       run: |
-        ls -R builds/${{ matrix.build_version }}/flows2fim
-
+        ls -R builds/${{ matrix.build_version }}
+        ls -R ${{ github.workspace }}/${{ matrix.build_version }}
         # cp builds/${{ matrix.build_version }}/flows2fim
         # echo "HOME: $HOME"
         # echo "github.workspace: ${{ github.workspace }}"
@@ -57,7 +57,7 @@ jobs:
       if: ${{ matrix.os }} == 'ubuntu-latest'
       run: |
         chmod +x flows2fim
-        flows2fim --version
+        $HOME/.local/bin/flows2fim --version
 
     - name: Test flows2fim controls
       run: ./flows2fim controls --param1 value1 --param2 value2
