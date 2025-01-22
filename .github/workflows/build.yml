@@ -26,16 +26,16 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.20'
+        go-version: '1.23'
       # run: go version
 
     - name: Build
-      run: ./scripts/build-${{ matrix.build_version }}.sh > flows2fim
+      run: ./scripts/build-${{ matrix.build_version }}.sh > artifacts/flows2fim
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.build_version }}
-        path: flows2fim
+        path: artifacts/flows2fim
 
     # - name: Run Windows build script
     #   if: ${{ matrix.os }} == 'windows-latest'
