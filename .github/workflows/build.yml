@@ -8,14 +8,6 @@ on:
   # release:
   #   types: [created, edited, published]
 
-inputs:
-  windows_buildpath: 
-      description: builds/windows-amd64
-      required: False
-  linux_buildpath: 
-      description: builds/linux-amd64
-      required: False 
-
 jobs:
   upload:
     name: Generate Build Artifacts
