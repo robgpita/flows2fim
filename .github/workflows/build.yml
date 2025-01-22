@@ -30,11 +30,11 @@ jobs:
       # run: go version
 
     - name: Build
-      run: ./scripts/build-${{ matrix.version }}.sh > flows2fim
+      run: ./scripts/build-${{ matrix.build_version }}.sh > flows2fim
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: flows2fim-${{ matrix.version }}
+        name: flows2fim-${{ matrix.build_version }}
         path: flows2fim
 
     # - name: Run Windows build script
