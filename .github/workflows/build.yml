@@ -9,13 +9,16 @@ on:
   #   types: [created, edited, published]
 
 jobs:
-  upload:
-    name: Generate Build Artifacts
+  build:
+    name: Build & Upload Artifacts
 
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        build_version: [linux-amd64, windows-amd64]
+        include:
+        -os: ubuntu-latest
+          build_version: linux-amd64
+        -os: windows-latest  
+          build_version: windows-amd64
     
     runs-on: ${{ matrix.os }}
 
@@ -27,53 +30,14 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.23'
-      # run: go version
 
-    - name: Build
+    - name: Build 
       run: |
         ./scripts/build-${{ matrix.build_version }}.sh
+  
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.build_version }}
         path: builds/${{ matrix.build_version }}
-
-    # - name: Run Windows build script
-    #   if: ${{ matrix.os }} == 'windows-latest'
-    #   run: |
-    #     echo "Building for Windows..."
-    #     ./scripts/build-windows-amd64.sh
-
-    # - name: Create Windows artifact
-    #   if: ${{ matrix.os }} == 'windows-latest'
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: flows2fim-${{ matrix.os }}
-    #     path: ${{ inputs.windows_buildpath }}
-        
-    # - name: Upload Windows artifacts
-    #   if: ${{ matrix.os }} == 'windows-latest'
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: flows2fim-${{ matrix.os }}
-    #     path: ${{ inputs.windows_buildpath }}
-
-    # - name: Run Linux build script
-    #   if: ${{ matrix.os }} == 'ubuntu-latest'
-    #   run: |
-    #      echo "Building for Linux..."
-    #     ./scripts/build-linux-amd64.sh
-
-    # - name: Create Linux artifact
-    #   if: ${{ matrix.os }} == 'ubuntu-latest'
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: linux-artifact
-    #     path: ${{ inputs.linux_buildpath }}
-      
-    # - name: Upload Linux artifacts
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: flows2fim-${{ matrix.os }}
-    #     path: ${{ inputs.linux_buildpath }}
 
