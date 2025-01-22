@@ -35,12 +35,10 @@ jobs:
         ls -R builds/${{ matrix.build_version }}
     
     - name: Set Path
-        run: |
-          echo "builds/${{ matrix.build_version }}" >> $GITHUB_PATH
+        run: echo "builds/${{ matrix.build_version }}" >> $GITHUB_PATH
     
     - name: Get Path
-        run: |
-          echo $GITHUB_PATH
+        run: echo $GITHUB_PATH
 
     - name: Make executable
       if: ${{ matrix.os }} == 'ubuntu-latest'
