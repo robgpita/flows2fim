@@ -33,7 +33,7 @@ jobs:
     - name: Display artifact 
       run: |
         ls -R builds/${{ matrix.build_version }}
-        ls -R ${{ github.workspace }}/${{ matrix.build_version }}
+        ./builds/${{ matrix.build_version }}/flows2fim --version
         # cp builds/${{ matrix.build_version }}/flows2fim
         # echo "HOME: $HOME"
         # echo "github.workspace: ${{ github.workspace }}"
