@@ -8,7 +8,7 @@ on:
   # pull_request:
 
 jobs:
-  Download flows2fim:
+  Download-and-Test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
