@@ -23,17 +23,41 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout Repo
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.23'
+    - name: Set up Docker Compose
+      uses: docker/setup-buildx-action@v3
+    
+    # - name: Set up Docker Compose
+    #   run: |
+    #     sudo apt-get update
+    #     sudo apt-get install -y docker-compose
 
-    - name: Build 
+    - name: Run Docker Compose
       run: |
-        ./scripts/build-${{ matrix.build_version }}.sh
+        docker compose up -d
+        docker ps
+
+    - name: Attach to running container and Build
+      run: |
+        CONTAINER_ID=$(docker ps -q | head -n 1)
+        if [ -n "$CONTAINER_ID" ]; then
+          docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-${{ matrix.build_version }}.sh"  
+          docker-compose down
+        else
+          echo "No running containers found"
+          exit 1
+        fi
+
+    # - name: Set up Go
+    #   uses: actions/setup-go@v5
+    #   with:
+    #     go-version: '1.23'
+
+    # - name: Build 
+    #   run: |
+    #     ./scripts/build-${{ matrix.build_version }}.sh
   
     - name: Upload
       uses: actions/upload-artifact@v4
