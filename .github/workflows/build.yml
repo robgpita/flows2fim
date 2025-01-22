@@ -18,6 +18,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
+        build_version: [linux-amd64, windows-amd64]
     # defaults:
     #   run:
     #     working-directory: ./scripts
@@ -32,34 +33,33 @@ jobs:
       run: go version
 
     - name: Run Windows build script
-      if: matrix.os == 'windows-latest'
+      if: ${{ matrix.os }} == 'windows-latest'
       run: |
         echo "Building for Windows..."
         ./scripts/build-windows-amd64.sh
 
     - name: Create Windows artifact
-      if: matrix.os == 'windows-latest'
-      id: windows_artifact
+      if: ${{ matrix.os }} == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.os }}
         path: ${{ inputs.windows_buildpath }}
         
     - name: Upload Windows artifacts
-      if: matrix.os == 'windows-latest'
+      if: ${{ matrix.os }} == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim-${{ matrix.os }}
         path: ${{ inputs.windows_buildpath }}
 
     - name: Run Linux build script
-      if: matrix.os == 'ubuntu-latest'
+      if: ${{ matrix.os }} == 'ubuntu-latest'
       run: |
          echo "Building for Linux..."
         ./scripts/build-linux-amd64.sh
 
     - name: Create Linux artifact
-      id: linux_artifact
+      if: ${{ matrix.os }} == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
         name: linux-artifact
