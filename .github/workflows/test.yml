@@ -38,10 +38,22 @@ jobs:
         ./builds/${{ matrix.build_version }}/flows2fim --version
         echo "builds/${{ matrix.build_version }}" >> $GITHUB_PATH
 
-    - name: Verify flows2fim is available
-      if: ${{ matrix.os }} == 'ubuntu-latest'
+    # - name: Verify flows2fim is available
+    #   if: ${{ matrix.os }} == 'ubuntu-latest'
+    #   run: |
+    #     flows2fim --version
+
+    - name: Install & Configure GDAL
+      run: |
+        sudo apt-get update && sudo apt-get install -y gdal-bin
+        sudo cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /usr/local/bin
+        sudo chmod +x /usr/local/bin/gdal_ls.py
+
+    - name: Verify Installations
       run: |
         flows2fim --version
+        gdalinfo --version
+        gdal_ls --version
 
     # - name: Test flows2fim controls
     #   run: flows2fim controls --param1 value1 --param2 value2
