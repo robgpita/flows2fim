@@ -43,6 +43,8 @@ jobs:
         flows2fim --version
   
   test:
+    name: Test cases for flows2fim
+    needs: download
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
