@@ -43,7 +43,6 @@ jobs:
       run: |
         flows2fim --version
 
-
     # - name: Test flows2fim controls
     #   run: flows2fim controls --param1 value1 --param2 value2
 
@@ -59,44 +58,3 @@ jobs:
     #     name: test-results-${{ matrix.os }}
     #     path: test-results/
 
-
-
-
-
-#   test-controls:
-#     needs: build
-#     runs-on: ${{ matrix.os }}
-#     strategy:
-#       matrix:
-#         os: [ubuntu-latest, windows-latest]
-#     steps:
-#       - uses: actions/checkout@v3
-#       - name: Run Tests
-#         env:
-#           FLOWS2FIM_PATH: ${{ needs.build.outputs.binary-path }}
-#         run: |
-#           # Ensure we're using the built binary
-#           cp ${{ needs.build.outputs.binary-path }} flows2fim
-#           # Run the test command
-#           ./flows2fim controls -db -f -o output.txt -sids 12345
-#           # Add more test cases here
-#           # Check for expected output or error conditions
-
-#   test-fim:
-#     needs: build
-#     runs-on: ${{ matrix.os }}
-#     strategy:
-#       matrix:
-#         os: [ubuntu-latest, windows-latest]
-#     steps:
-#       - uses: actions/checkout@v3
-#       - name: Run Tests
-#         env:
-#           FLOWS2FIM_PATH: ${{ needs.build.outputs.binary-path }}
-#         run: |
-#           # Ensure we're using the built binary
-#           cp ${{ needs.build.outputs.binary-path }} flows2fim
-#           # Run the test command
-#           ./flows2fim fim -c config.json -o output.txt
-#           # Add more test cases here
-#           # Check for expected output or error conditions

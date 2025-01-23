@@ -58,7 +58,6 @@ jobs:
     - name: Add flows2fim to PATH
       run: |
         ls -R builds/windows-amd64
-        sudo chmod a+x ./builds/windows-amd64/flows2fim 
         ./builds/windows-amd64/flows2fim --version
         echo "builds/windows-amd64" >> $GITHUB_PATH
 
