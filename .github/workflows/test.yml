@@ -49,7 +49,7 @@ jobs:
         ls /usr/lib/python3/dist-packages/osgeo_utils/samples/
         sudo cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /usr/local/bin
         sudo chmod a+x /usr/local/bin/gdal_ls.py
-        echo "/usr/lib/python3/dist-packages/osgeo_utils/samples/" >> $GITHUB_PATH
+        echo "/usr/local/bin" >> $GITHUB_PATH
 
     - name: Verify Installations
       run: |
