@@ -38,7 +38,7 @@ jobs:
     - name: Add flows2fim to PATH
       run: |
         ls -R builds/linux-amd64
-        chmod a+x ./builds/linux-amd64/flows2fim 
+        sudo chmod a+x ./builds/linux-amd64/flows2fim 
         ./builds/linux-amd64/flows2fim --version
         echo "builds/linux-amd64" >> $GITHUB_PATH
   
