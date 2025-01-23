@@ -8,8 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build flows2fim
-    
+    name: Build flows2fim executable
     runs-on: ubuntu-latest
 
     steps:
@@ -41,7 +40,7 @@ jobs:
         name: flows2fim
         path: builds/windows-amd64
   
-test:
+  test:
     name: Test flows2fim
     runs-on: windows-latest
     needs: build
