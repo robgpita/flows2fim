@@ -47,6 +47,7 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y gdal-bin
         sudo cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /usr/local/bin
+        echo "/usr/local/bin" >> $GITHUB_PATH
         sudo chmod +x /usr/local/bin/gdal_ls.py
 
     - name: Verify Installations
