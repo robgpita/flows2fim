@@ -1,0 +1,57 @@
+name: Build and Test Flows2FIM - Linux
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - ci
+
+jobs:
+  build:
+    name: Build flows2fim
+    
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Compose
+      uses: docker/setup-buildx-action@v3
+
+    - name: Run Docker Compose
+      run: |
+        docker compose up -d
+        docker ps
+
+    - name: Attach to running container and Build
+      run: |
+        CONTAINER_ID=$(docker ps -q | head -n 1)
+        if [ -n "$CONTAINER_ID" ]; then
+          docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-linux-amd64.sh"  
+          docker compose down
+        else
+          echo "No running containers found"
+          exit 1
+        fi
+
+    - name: Add flows2fim to PATH
+      run: |
+        ls -R builds/linux-amd64
+        chmod a+x ./builds/linux-amd64/flows2fim 
+        ./builds/linux-amd64/flows2fim --version
+        echo "builds/linux-amd64" >> $GITHUB_PATH
+  
+  test:
+    name: Test flows2fim
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Verify flows2fim is available
+      run: |
+        flows2fim --version
+
