@@ -10,7 +10,7 @@ jobs:
   build:
     name: Build flows2fim
     
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - name: Checkout Repository
@@ -28,7 +28,7 @@ jobs:
       run: |
         CONTAINER_ID=$(docker ps -q | head -n 1)
         if [ -n "$CONTAINER_ID" ]; then
-          docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-linux-amd64.sh"  
+          docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-windows-amd64.sh"  
           docker compose down
         else
           echo "No running containers found"
@@ -39,11 +39,11 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: flows2fim
-        path: builds/linux-amd64
+        path: builds/windows-amd64
   
-  test:
+test:
     name: Test flows2fim
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build
 
     steps:
@@ -53,17 +53,17 @@ jobs:
     - name: Download artifact
       uses: actions/download-artifact@v4
       with:
-        name: flows2fim-linux-amd64
-        path: builds/linux-amd64
+        name: flows2fim-windows-amd64
+        path: builds/windows-amd64
     
     - name: Add flows2fim to PATH
       run: |
-        ls -R builds/linux-amd64
-        sudo chmod a+x ./builds/linux-amd64/flows2fim 
-        ./builds/linux-amd64/flows2fim --version
-        echo "builds/linux-amd64" >> $GITHUB_PATH
+        ls -R builds/windows-amd64
+        sudo chmod a+x ./builds/windows-amd64/flows2fim 
+        ./builds/windows-amd64/flows2fim --version
+        echo "builds/windows-amd64" >> $GITHUB_PATH
 
-    - name: Verify flows2fim executable is available
+    - name: Verify flows2fim is available
       run: |
-        flows2fim --version
+        ./flows2fim --version
 

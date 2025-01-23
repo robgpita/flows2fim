@@ -16,8 +16,8 @@ jobs:
         include:
           - os: ubuntu-latest
             build_version: linux-amd64
-          - os: windows-latest  
-            build_version: windows-amd64
+          # - os: windows-latest  
+          #   build_version: windows-amd64
 
     steps:
     - uses: actions/checkout@v3
@@ -43,33 +43,6 @@ jobs:
       run: |
         flows2fim --version
 
-    - name: Verify flows2fim is available
-      if: ${{ matrix.os }} == 'windows-latest'
-      run: |
-        ./flows2fim --version
-  
-  test:
-    name: Test cases for flows2fim
-    needs: download
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            build_version: linux-amd64
-          - os: windows-latest  
-            build_version: windows-amd64
-
-    steps:
-    - name: Verify flows2fim is available
-      if: ${{ matrix.os }} == 'ubuntu-latest'
-      run: |
-        flows2fim --version
-        
-    - name: Verify flows2fim is available
-      if: ${{ matrix.os }} == 'windows-latest'
-      run: |
-        ./flows2fim --version
 
     # - name: Test flows2fim controls
     #   run: flows2fim controls --param1 value1 --param2 value2
