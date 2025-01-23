@@ -20,8 +20,8 @@ Commands:
   - fim: Given a control table and a fim library folder, create a flood inundation map for the control conditions.
   - validate: Given a fim library folder and a rating curves database, validate there is one to one correspondence between the entries of rating curves table and fim library objects.
 
-Notes:
-  - 'fim' and 'validate' commands need access to GDAL programs. They must be installed separately and available in the system's PATH.
+Dependencies:
+  - GDAL must be installed and available in the PATH.
 `
 
 var (
