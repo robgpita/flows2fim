@@ -65,3 +65,10 @@ jobs:
       run: |
         ./flows2fim --version
 
+    # - name: Install GDAL
+
+    # - name: Verify Installations
+    #   run: | 
+    #     flows2fim --version
+    #     gdalinfo --version
+    #     gdal_ls --version
