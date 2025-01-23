@@ -37,7 +37,9 @@ jobs:
           setx PROJ_LIB "C:\OSGeo4W\share\proj"
 
       - name: Refresh env
-        run: refreshenv
+        run: |
+          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+          refreshenv
 
       - name: Verify GDAL installation
         run: gdalinfo --version
