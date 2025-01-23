@@ -1,4 +1,4 @@
-name: Build and Test Flows2FIM - Linux
+name: Build and Test Flows2FIM - Windows
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ jobs:
   build:
     name: Build flows2fim
     
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Repository
