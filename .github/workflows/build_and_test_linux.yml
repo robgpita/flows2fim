@@ -35,12 +35,6 @@ jobs:
           exit 1
         fi
 
-    - name: Add flows2fim to PATH
-      run: |
-        ls -R builds/linux-amd64
-        sudo chmod a+x ./builds/linux-amd64/flows2fim 
-        ./builds/linux-amd64/flows2fim --version
-        echo "builds/linux-amd64" >> $GITHUB_PATH
   
   test:
     name: Test flows2fim
@@ -50,6 +44,13 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
+    
+    - name: Add flows2fim to PATH
+      run: |
+        ls -R builds/linux-amd64
+        sudo chmod a+x ./builds/linux-amd64/flows2fim 
+        ./builds/linux-amd64/flows2fim --version
+        echo "builds/linux-amd64" >> $GITHUB_PATH
 
     - name: Verify flows2fim is available
       run: |
