@@ -53,7 +53,7 @@ test:
     - name: Download artifact
       uses: actions/download-artifact@v4
       with:
-        name: flows2fim-windows-amd64
+        name: flows2fim
         path: builds/windows-amd64
     
     - name: Add flows2fim to PATH
