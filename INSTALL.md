@@ -57,4 +57,4 @@ Coming soon
 4. **Verify**
     - Run `flows2fim --version` to confirm everything works.
     - Run `gdalinfo --version` to confirm everything works.
-    - (Optional) Run `gdal_ls --version` if you set it up.
+    - (Optional) Run `gdal_ls.py --version` if you set it up.

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# The script must be executed from the root of the repository
+# The script must be executed from the root of the repository & within the docker container
 set -eo pipefail
 
 echo "Building for Darwin (MacOS) ARM64..."
