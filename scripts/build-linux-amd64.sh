@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# The script must be executed from the root of the repository & within docker container
+# The script must be executed from the root of the repository & within the docker container
 set -eo pipefail
 
 echo "Building for Linux AMD64..."
