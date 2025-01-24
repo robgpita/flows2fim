@@ -34,17 +34,17 @@ jobs:
     - name: Display artifact & Add flows2fim to PATH
       run: |
         ls -R builds/${{ matrix.build_version }}
-        chmod a+x ./builds/${{ matrix.build_version }}/flows2fim 
-        ./builds/${{ matrix.build_version }}/flows2fim --version
+        chmod a+x ./builds/${{ matrix.build_version }}/flows2fim
         echo "builds/${{ matrix.build_version }}" >> $GITHUB_PATH
 
     - name: Install & Configure GDAL
       run: |
         sudo apt-get update && sudo apt-get install -y gdal-bin
-        sudo cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /usr/local/bin
-        ls /usr/local/bin
-        sudo chmod a+x /usr/local/bin/gdal_ls.py
+        # sudo cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /usr/local/bin
+        # sudo chmod a+x /usr/local/bin/gdal_ls.py
         echo "/usr/local/bin" >> $GITHUB_PATH
+        sudo chmod a+x /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py
+        echo "/usr/lib/python3/dist-packages/osgeo_utils/samples/" >> $GITHUB_PATH
 
     - name: Verify Installations
       run: |
