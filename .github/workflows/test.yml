@@ -51,6 +51,7 @@ jobs:
         flows2fim --version
         gdalinfo --version
         gdal_ls.py --version
+        echo "All dependencies installed"
 
     # - name: Test flows2fim 
     #   run: | 
