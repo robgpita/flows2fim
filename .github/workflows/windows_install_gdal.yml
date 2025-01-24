@@ -1,0 +1,45 @@
+name: Install GDAL Windows
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - ci
+
+jobs:
+  install_gdal:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Install OSGeo4W
+        id: setup-osgeo4w
+        uses: echoix/setup-OSGeo4W@v0.2.0
+        with:
+          packages: gdal-devel
+      
+      # - name: Show OSGeo4W root
+      #   run: echo "${{ steps.setup-osgeo4w.outputs.root }}"
+
+      # - name: Install gdal
+      #   if: matrix.os == 'windows-latest'
+      #   run: | 
+      #     choco install gdal
+      #     gdalinfo --version
+
+      - name: Set PATH
+        run: |
+          setx PATH "%PATH%;C:\OSGeo4W\bin"
+          setx GDAL_DATA "C:\OSGeo4W\share\gdal"
+          setx GDAL_PATH "C:\OSGeo4W64\share\gdal"
+          setx PROJ_LIB "C:\OSGeo4W\share\proj"
+
+      - name: Refresh env
+        run: |
+          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+          refreshenv
+
+      - name: Verify GDAL installation
+        run: gdalinfo --version

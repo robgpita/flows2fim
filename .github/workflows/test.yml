@@ -1,0 +1,61 @@
+name: Test Flows2FIM
+
+on: 
+  workflow_dispatch:
+  push:
+    branches:
+      - ci
+  # pull_request:
+
+jobs:
+  download:
+    name: Download Artifact 
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            build_version: linux-amd64
+          # - os: windows-latest  
+          #   build_version: windows-amd64
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: flows2fim-${{ matrix.build_version }}
+        path: builds/${{ matrix.build_version }}
+        github-token: ${{ github.token }}
+        repository: ${{ github.repository }}
+        run-id: 12918961000
+
+    - name: Display artifact & Add flows2fim to PATH
+      run: |
+        ls -R builds/${{ matrix.build_version }}
+        chmod a+x ./builds/${{ matrix.build_version }}/flows2fim
+        echo "builds/${{ matrix.build_version }}" >> $GITHUB_PATH
+
+    - name: Install & Configure GDAL
+      run: |
+        sudo apt-get update && sudo apt-get install -y gdal-bin
+        sudo chmod a+x /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py
+        echo "/usr/lib/python3/dist-packages/osgeo_utils/samples/" >> $GITHUB_PATH
+
+    - name: Verify flows2fim and gdal installations
+      run: |
+        flows2fim --version
+        gdalinfo --version
+        which gdal_ls.py
+
+    # - name: Test flows2fim 
+    #   run: | 
+    #     ./scripts/test-matrix-linux-amd64.sh
+
+    # - name: Upload test results
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: test-results-${{ matrix.os }}
+    #     path: test-results/
+

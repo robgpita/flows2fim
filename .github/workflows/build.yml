@@ -1,0 +1,55 @@
+name: Build Flows2FIM
+
+on:
+  workflow_dispatch:
+  # release:
+  #   types: [created, edited, published]
+  # pull_request:
+  #   paths:
+  #     - '**.go'
+
+jobs:
+  build:
+    name: Build & Upload Artifacts
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            build_version: linux-amd64
+          - os: ubuntu-latest
+            build_version: windows-amd64
+          # - os: windows-latest  
+          #   build_version: windows-amd64
+    
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Compose
+      uses: docker/setup-buildx-action@v3
+
+    - name: Run Docker Compose
+      run: |
+        docker compose up -d
+        docker ps
+
+    - name: Attach to running container and Build
+      run: |
+        CONTAINER_ID=$(docker ps -q | head -n 1)
+        if [ -n "$CONTAINER_ID" ]; then
+          docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-${{ matrix.build_version }}.sh"  
+          docker compose down
+        else
+          echo "No running containers found"
+          exit 1
+        fi
+  
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: flows2fim-${{ matrix.build_version }}
+        path: builds/${{ matrix.build_version }}
+
