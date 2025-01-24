@@ -40,36 +40,18 @@ jobs:
     - name: Install & Configure GDAL
       run: |
         sudo apt-get update && sudo apt-get install -y gdal-bin
-        # sudo cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /usr/local/bin
-        # sudo chmod a+x /usr/local/bin/gdal_ls.py
-        echo "/usr/local/bin" >> $GITHUB_PATH
         sudo chmod a+x /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py
         echo "/usr/lib/python3/dist-packages/osgeo_utils/samples/" >> $GITHUB_PATH
 
-    - name: Verify flows2fim Installation
+    - name: Verify flows2fim and gdal installations
       run: |
         flows2fim --version
-        flows2fim validate -h
         gdalinfo --version
         which gdal_ls.py
-        echo "All dependencies installed"
 
     # - name: Test flows2fim 
     #   run: | 
     #     ./scripts/test-matrix-linux-amd64.sh
-
-    # - name: Test flows2fimcontrols
-    #   run: flows2fim controls --param1 value1 --param2 value2
-
-    # - name: flows2fim controls regression
-    #   run : - diff <output from step above> <current benchmark file>
-
-    # - name: Test flows2fim fim
-    #   run: flows2fim fim --param3 value3 --param4 value4
-
-    # - name: Test flows2fim validate
-    #   run: flows2fim validate --param5 value5 --param6 value6
-
 
     # - name: Upload test results
     #   uses: actions/upload-artifact@v3

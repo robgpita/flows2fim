@@ -2,11 +2,11 @@ name: Build Flows2FIM
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - ci
   # release:
   #   types: [created, edited, published]
+  # pull_request:
+  #   paths:
+  #     - '**.go'
 
 jobs:
   build:

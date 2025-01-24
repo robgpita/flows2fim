@@ -1,10 +1,6 @@
 name: Build and Test Flows2FIM - Linux
 
-on:
-  workflow_dispatch:
-  # push:
-  #   branches:
-  #     - ci
+on: [workflow_dispatch, pull_request]
 
 jobs:
   build:
@@ -63,7 +59,15 @@ jobs:
         ./builds/linux-amd64/flows2fim --version
         echo "builds/linux-amd64" >> $GITHUB_PATH
 
-    - name: Verify flows2fim executable is available
+    - name: Install & Configure GDAL
+      run: |
+        sudo apt-get update && sudo apt-get install -y gdal-bin
+        sudo chmod a+x /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py
+        echo "/usr/lib/python3/dist-packages/osgeo_utils/samples/" >> $GITHUB_PATH
+
+    - name: Verify flows2fim and gdal installations
       run: |
         flows2fim --version
+        gdalinfo --version
+        which gdal_ls.py
 
