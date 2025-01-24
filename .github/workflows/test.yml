@@ -46,12 +46,18 @@ jobs:
         sudo chmod a+x /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py
         echo "/usr/lib/python3/dist-packages/osgeo_utils/samples/" >> $GITHUB_PATH
 
-    - name: Verify Installations
+    - name: Verify flows2fim Installations
       run: |
         flows2fim --version
-        gdalinfo --version
-        gdal_ls.py --version
-        echo "All dependencies installed"
+        # gdalinfo --version
+        # gdal_ls.py --version
+        # echo "All dependencies installed"
+    
+    - name: Verify gdal Installation
+      run: gdalinfo --version
+
+    - name: Verify gdal_ls Installation
+      run: gdal_ls.py --version
 
     # - name: Test flows2fim 
     #   run: | 
