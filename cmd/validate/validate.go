@@ -19,7 +19,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-var usage string = `Usage of fim:
+var usage string = `Usage of validate:
 Given a fim library folder and a rating curves database,
 validate there is one to one correspondence between the entries of rating curves table and fim library objects.
 GDAL VSI paths can be used, given GDAL must have access to cloud creds.
