@@ -36,10 +36,10 @@ Database file must have a table 'network' and contain following coloumns
         updated_to_id INTEGER
 
 CLI flag syntax. The following forms are permitted:
--flag
---flag   // double dashes are also permitted
--flag=x
--flag x  // non-boolean flags only
+	-flag
+	--flag   // double dashes are also permitted
+	-flag=x
+	-flag x  // non-boolean flags only
 Arguments:`
 
 type FlowData struct {

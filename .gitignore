@@ -40,5 +40,6 @@ data/
 # Unit test data
 !testdata/unit_tests/flow_files/*.csv
 
-
-
+# Temp Files
+*.gpkg-wal 
+*.gpkg-shm

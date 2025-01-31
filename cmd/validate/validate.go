@@ -53,10 +53,10 @@ Database file must have a table 'rating_curves' and contain following columns
 
 
 CLI flag syntax. The following forms are permitted:
--flag
---flag   // double dashes are also permitted
--flag=x
--flag x  // non-boolean flags only
+	-flag
+	--flag   // double dashes are also permitted
+	-flag=x
+	-flag x  // non-boolean flags only
 Arguments:`
 
 // SQL Query Constants

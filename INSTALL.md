@@ -38,14 +38,27 @@ Coming soon
    ```
 
 2. **Setup flows2fim**
-    - Go to the [**Releases**](https://github.com/ar-siddiqui/flows2fim/releases) page and download the `flows2fim-linux-amd64.tar.gz`
-   - Extract it and move to a directory in PATH (e.g., `/usr/local/bin`) and make it executable:
-     ```bash
-     tar -xvf flows2fim-linux-amd64.tar.gz
-     sudo mv flows2fim /usr/local/bin/
-     sudo chmod +x /usr/local/bin/flows2fim
-     ```
-
+    1. **Download**
+        - Go to the [**Releases**](https://github.com/ar-siddiqui/flows2fim/releases) page and download the `flows2fim-linux-amd64.tar.gz`
+        - Extract it and move to a directory in PATH (e.g., `/usr/local/bin`) and make it executable:
+            ```bash
+            tar -xvf flows2fim-linux-amd64.tar.gz
+            sudo mv flows2fim /usr/local/bin/
+            sudo chmod +x /usr/local/bin/flows2fim
+            ```
+    2. **Build from source**
+        - cd into root of repository
+        - Build container
+            - `docker compose up -d`
+        - Get flows2fim CONTAINER_ID
+            - `CONTAINER_ID=$(docker ps -q | head -n 1)`
+        - Issue build script
+            - `docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-linux-amd64.sh"` 
+        - Shutdown container
+            - `docker compose down`
+        - Move executable to $PATH
+            - `sudo mv builds/linux-amd64/flows2fim /usr/local/bin/`
+            - `sudo chmod +x /usr/local/bin/flows2fim`
 3. **(Optional) Enable `gdal_ls`**
    - Only required if using `flows2fim validate` with FIM libraries stored on cloud.
    - On Ubuntu/Debian systems:
