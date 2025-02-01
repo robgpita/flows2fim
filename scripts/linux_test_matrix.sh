@@ -100,8 +100,8 @@ controls_test_cases() {
 
     # Define the recurrence interval array
     local recurrence_interval=(2 5 10 25 50 100)
-    printf "(1/${num_test_cases_controls})\n\t>>>> Generate controls.csv files from "${recurrence_interval[@]}""
-    printf " recurrence interval data <<<<\n\n"
+    printf "(1/${num_test_cases_controls})\n\t>>>> Generate controls.csv files from " 
+    printf "${recurrence_interval[*]} year recurrence interval data <<<<\n\n"
     
         for interval in "${recurrence_interval[@]}"; do
             # Execute flows2fim with the current interval
