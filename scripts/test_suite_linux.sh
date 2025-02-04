@@ -140,7 +140,7 @@ controls_test_cases() {
                 -scsv $start_reaches_dir/start_reaches.csv
         done
     
-    printf "(2/${num_test_cases_controls})\t>>>> Regression Testing (comparing controls files) <<<<\n\n"
+    printf "\n(2/${num_test_cases_controls})\t>>>> Regression Tests for all recur. int. controls files) <<<<\n\n"
         # Compare controls files from recently generated test data and benchmark data
         # Capture the output of the comparion as a variable if there was no differnce
         diff_output=$(compare_directories "$control_test_outputs" "$controls_benchmark_dir")
@@ -340,12 +340,12 @@ fim_test_cases() {
                 -o $fim_test_outputs/fim_${interval}year.tif &> /dev/null
         done
    
-    printf "(2/${num_test_cases_fim})\t>>>> Regression Testing (comparing fim.tif files) <<<<\n\n"
-        # Compare controls files from recently generated test data and benchmark data
-    
-        # Capture the output of the comparion as a variable if there was no differnce
+    printf "(2/${num_test_cases_fim})\t>>>> Regression Tests for all recur. int. fim.tif files <<<<\n\n"
+        # Compare fim files from recently generated test data and benchmark data
+        # Capture the output of the compare_directories function as a variable 
         diff_output=$(compare_directories "$fim_test_outputs" "$fim_benchmark_dir" "fim")
 
+        # If there was no differnce, test pass
         if [ -z "$diff_output" ]; then
             printf "\t \u2714 No significant difference in fim.tif files. \n\n"
         else
@@ -355,7 +355,7 @@ fim_test_cases() {
         fi
 
     printf "(3/${num_test_cases_fim})\t>>>> Generate fim files in different output formats <<<<\n\n" 
-        local file_formats=("vrt" "tif" "cog")
+        local file_formats=( "tif" "cog" "vrt" )
 
         for format in "${file_formats[@]}"; do
             local output_file=fim_2year.$format
@@ -367,15 +367,16 @@ fim_test_cases() {
                 -o $fim_test_output_formats/$output_file &> /dev/null
         done
 
-    printf "(4/${num_test_cases_fim})\t>>>> Regrssion Testing for different output formats <<<<\n\n" 
-        # Capture the output of the comparion as a variable if there was no differnce
+    printf "(4/${num_test_cases_fim})\t>>>> Regrssion Tests for different output formats <<<<\n\n" 
+        # Capture the output of the comparison function as a variable 
         diff_output=$(compare_directories "$fim_reference_output_formats" "$fim_test_output_formats")
 
+        # If there was no differnce between directories, test pass
         if [ -z "$diff_output" ]; then
             printf "\t \u2714 No differences in .cog, .vrt & .tif files. \n\n"
         else
             printf "\t \u274c Outputs differ: \n\n" 
-            printf "\t $diff_output \n"
+            printf "$diff_output \n"
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi
 
@@ -408,7 +409,7 @@ fim_test_cases() {
         # Test case
         flows2fim fim \
                 -c $controls_benchmark_dir/controls_2year.csv \
-                -fmt $format \
+                -fmt "tif" \
                 -o $fim_test_outputs/fim_test.tif &> "$tempfile"
         # Here we use head -n 1 to capture the first line redirected to the tmp file
         first_line=$(tail -n 1 "$tempfile")
