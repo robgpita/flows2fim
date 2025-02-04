@@ -40,7 +40,7 @@ fi
 
 # Set paths and configurable variables
 data_folder=testdata
-benchmark_data=$data_folder/benchmark_data
+# benchmark_data=$data_folder/benchmark_data
 collection_data_path=$data_folder/mip_17110008
 flows_dir=$collection_data_path/flows
 library_dir=$collection_data_path/library
@@ -50,11 +50,11 @@ flows_files_dir=$ref_dir/flows_files
 start_reaches_dir=$ref_dir/start_reaches
 test_outputs=$data_folder/test_out
 control_test_outputs=$test_outputs/controls
-controls_benchmark=$benchmark_data/controls
+controls_benchmark=$ref_dir/controls
 
 fim_test_outputs=$test_outputs/fim
-library_benchmark=$benchmark_data/library
-fim_benchmark_dir=$benchmark_data/fim
+library_benchmark=$ref_dir/library
+fim_benchmark_dir=$ref_dir/fim
 
 fim_file_format="tif"
 
@@ -346,7 +346,7 @@ fim_test_cases() {
     diff_output=$(compare_directories "$fim_test_outputs" "$fim_benchmark_dir" "fim")
 
     if [ -z "$diff_output" ]; then
-        printf " \u2714 No difference in fim files. \n"
+        printf " \u2714 No significant difference in fim.tif files. \n"
     else
         printf " \u274c Outputs differ: \n" 
         printf "$diff_output \n"
