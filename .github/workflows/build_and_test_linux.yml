@@ -72,12 +72,12 @@ jobs:
     
     - name: Issue flows2fim controls test cases
       run: |
-        ./scripts/linux_test_matrix.sh controls
+        ./scripts/test_suite_linux.sh controls
 
     - name: Issue flows2fim fim test cases
       run: |
-        ./scripts/linux_test_matrix.sh fim
+        ./scripts/test_suite_linux.sh fim
 
     - name: Issue flows2fim validate test cases
       run: |
-        ./scripts/linux_test_matrix.sh validate
+        ./scripts/test_suite_linux.sh validate

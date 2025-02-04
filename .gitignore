@@ -25,20 +25,18 @@ builds/*
 # Go workspace file
 go.work
 
-# Data file
+# Data files
 *.csv
 *.vrt
 *.tif
+*.cog
 *.db
 *.sqlite
 *.xml
 *.gpkg
 
-# Data
-data/
-
-# Unit test data
-!testdata/unit_tests/flow_files/*.csv
+# Test data
+!testdata/test_out/
 
 # Temp Files
 *.gpkg-wal 
