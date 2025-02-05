@@ -84,9 +84,9 @@ compare_directories() {
         if [ -f "$filepath2" ] && [ "$fim" = "fim" ]; then
             tempfile=$(mktemp)
             gdalcompare.py $file $filepath2 &> "$tempfile"
-            # cat "$tempfile"
+            cat "$tempfile"
             gdalcompare_output=$(tail -n 1 "$tempfile" | grep -Eo "[0-9]+" | tail -n 1)
-            # echo "gdalcompare_output: $gdalcompare_output" 
+            echo "gdalcompare_output: $gdalcompare_output" 
             # Remove temp file 
             rm "$tempfile"
             # Set tolerance value of gdalcompare 
