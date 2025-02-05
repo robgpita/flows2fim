@@ -96,6 +96,8 @@ compare_directories() {
         elif [ -f "$filepath2" ]; then
             # Compare the files
             if ! cmp -s "$file" "$filepath2"; then
+                temp_out=$(cmp -s "$file" "$filepath2")
+                printf "Output of cmp -s "$file" "$filepath2" : \n\n $temp_out"
                 printf "\t \u274c Files differ: $filename \n"
             fi
         else
@@ -370,7 +372,6 @@ fim_test_cases() {
     printf "(4/${num_test_cases_fim})\t>>>> Regrssion Tests for different output formats <<<<\n\n" 
         # Capture the output of the comparison function as a variable 
         diff_output=$(compare_directories "$fim_reference_output_formats" "$fim_test_output_formats")
-
         # If there was no differnce between directories, test pass
         if [ -z "$diff_output" ]; then
             printf "\t \u2714 No differences in .cog, .vrt & .tif files. \n\n"
