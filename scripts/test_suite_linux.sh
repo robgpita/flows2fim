@@ -85,9 +85,9 @@ compare_directories() {
             tempfile=$(mktemp)
             if [ "${filename:10:13}" = "vrt" ]; then
                 # vrt files not necessary to compare with gdalcompare the files
-                if ! cmp -s "$file" "$filepath2"; then
-                    temp_out=$(cmp "$file" "$filepath2")
-                    printf "Output of cmp -s "$file" "$filepath2" : \n\n $temp_out"
+                temp_out=$(diff "$file" "$filepath2")
+                if [ "$temp_out" != "" ]; then
+                    printf "Output of diff "$file" "$filepath2" : \n\n $temp_out"
                     printf "\t \u274c Files differ: $filename \n"
                 fi    
             fi
