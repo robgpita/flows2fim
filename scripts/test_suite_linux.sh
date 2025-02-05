@@ -84,9 +84,9 @@ compare_directories() {
         if [ -f "$filepath2" ] && [ "$fim" = "fim" ]; then
             tempfile=$(mktemp)
             gdalcompare.py $file $filepath2 &> "$tempfile"
-            cat "$tempfile"
+            # cat "$tempfile"
             gdalcompare_output=$(tail -n 1 "$tempfile" | grep -Eo "[0-9]+" | tail -n 1)
-            echo "gdalcompare_output: $gdalcompare_output" 
+            # echo "gdalcompare_output: $gdalcompare_output" 
             # Remove temp file 
             rm "$tempfile"
             # Set tolerance value of gdalcompare 
@@ -373,7 +373,7 @@ fim_test_cases() {
 
     printf "(4/${num_test_cases_fim})\t>>>> Regrssion Tests for different output formats <<<<\n\n" 
         # Capture the output of the comparison function as a variable 
-        diff_output=$(compare_directories "$fim_reference_output_formats" "$fim_test_output_formats" "fim")
+        diff_output=$(compare_directories "$fim_reference_output_formats" "$fim_test_output_formats")
         # If there was no differnce between directories, test pass
         if [ -z "$diff_output" ]; then
             printf "\t \u2714 No differences in .cog, .vrt & .tif files. \n\n"
