@@ -83,6 +83,14 @@ compare_directories() {
         # Check if the file exists in dir2
         if [ -f "$filepath2" ] && [ "$fim" = "fim" ]; then
             tempfile=$(mktemp)
+            # if [ "${filename:10:13}" = "vrt" ]; then
+            #     # vrt files not necessary to compare with gdalcompare the files
+            #     if ! cmp -s "$file" "$filepath2"; then
+            #         temp_out=$(cmp "$file" "$filepath2")
+            #         printf "Output of cmp -s "$file" "$filepath2" : \n\n $temp_out"
+            #         printf "\t \u274c Files differ: $filename \n"
+            #     fi    
+            # fi
             gdalcompare.py $file $filepath2 &> "$tempfile"
             # cat "$tempfile"
             gdalcompare_output=$(tail -n 1 "$tempfile" | grep -Eo "[0-9]+" | tail -n 1)
