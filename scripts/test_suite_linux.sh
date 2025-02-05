@@ -96,7 +96,7 @@ compare_directories() {
         elif [ -f "$filepath2" ]; then
             # Compare the files
             if ! cmp -s "$file" "$filepath2"; then
-                temp_out=$(cmp -s "$file" "$filepath2")
+                temp_out=$(cmp "$file" "$filepath2")
                 printf "Output of cmp -s "$file" "$filepath2" : \n\n $temp_out"
                 printf "\t \u274c Files differ: $filename \n"
             fi
