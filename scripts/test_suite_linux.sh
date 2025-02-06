@@ -79,15 +79,14 @@ compare_directories() {
     for file in "$dir1"/*; do
         filename=$(basename "$file")
         filepath2="$dir2/$filename"
-        # echo "file $file, filepath2 $filepath2"
-        # Check if the file exists in dir2
+        # Skip the one off .vrt relative test when comparing directories 
+        if [ "$filename" = "fim_2year_test_rel_false.vrt" ]; then 
+            continue
+        fi
+        # Check if the file exists in dir2, and if the "fim" argument was given
         if [ -f "$filepath2" ] && [ "$fim" = "fim" ]; then
             tempfile=$(mktemp)
             if [ "${filename:10:13}" = "vrt" ]; then
-                # The vrt file is a special case, since the call to gdalbuildvrt within the github actions runner
-                # behaves different. Essentially the vrt contains different values for the "relativeToVRT" because
-                # the default behaviour of the -rel flag to flows2fim fim is not working correctly.
-                # temp_out=$(diff -I '^      <SourceFilename' "$file" "$filepath2")
                 temp_out=$(diff "$file" "$filepath2")
                 if [ "$temp_out" != "" ]; then
                     printf "Output of diff "$file" "$filepath2" : \n\n $temp_out"
@@ -157,7 +156,7 @@ controls_test_cases() {
     
     printf "\n(2/${num_test_cases_controls})\t>>>> Regression Tests for all recur. int. controls files) <<<<\n\n"
         # Compare controls files from recently generated test data and benchmark data
-        # Capture the output of the comparion as a variable if there was no differnce
+        # Capture the output of the comparion as a variable if there is no differnce
         diff_output=$(compare_directories "$control_test_outputs" "$controls_benchmark_dir")
 
         if [ -z "$diff_output" ]; then
@@ -326,7 +325,7 @@ controls_test_cases() {
 }
 
 fim_test_cases() {
-    local num_test_cases_fim=8
+    local num_test_cases_fim=9
     local failed_fim_testcases=0
     total_count=$(( total_count + num_test_cases_fim))
     # If previous directories exists, remove them
@@ -360,7 +359,7 @@ fim_test_cases() {
         # Capture the output of the compare_directories function as a variable 
         diff_output=$(compare_directories "$fim_test_outputs" "$fim_benchmark_dir" "fim")
 
-        # If there was no differnce, test pass
+        # If there is no differnce, test pass
         if [ -z "$diff_output" ]; then
             printf "\t \u2714 No significant difference in fim.tif files. \n\n"
         else
@@ -383,12 +382,15 @@ fim_test_cases() {
                 -rel false &> /dev/null
         done
 
-    ##TODO - Another test case that tests the default behavior of -rel. Previously had discrepancies with GHA runner and local.  
 
     printf "(4/${num_test_cases_fim})\t>>>> Regrssion Tests for different output formats <<<<\n\n" 
+        # Note:
+        # The vrt file creation with -rel true (default behaviour) is a failing case, 
+        # because the vrt contains different values for the "relativeToVRT". This is due to
+        # the behaviour of the -rel flag to flows2fim fim not working as expected.
         # Capture the output of the comparison function as a variable 
         diff_output=$(compare_directories "$fim_reference_output_formats" "$fim_test_output_formats" "fim")
-        # If there was no differnce between directories, test pass
+        # If there is no differnce between directories, test pass
         if [ -z "$diff_output" ]; then
             printf "\t \u2714 No differences in .cog, .vrt & .tif files. \n\n"
         else
@@ -397,8 +399,26 @@ fim_test_cases() {
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi
 
-        
-    printf "(5/${num_test_cases_fim})\t>>>> Assert Error thrown from no controls file parameter <<<<\n\n" 
+    printf "(5/${num_test_cases_fim})\t>>>> Assert flows2fim fim -rel argument creates .vrt with correct xml output <<<<\n\n" 
+        output_file=fim_2year_test_rel_false.vrt
+        flows2fim fim \
+            -c $controls_benchmark_dir/controls_2year.csv \
+            -fmt "vrt" \
+            -lib $library_benchmark \
+            -o $fim_test_output_formats/$output_file \
+            -rel false &> /dev/null
+
+        diff_output=$(diff "$fim_reference_output_formats/$output_file" "$fim_test_output_formats/$output_file")
+        # If there is no differnce between files, test pass
+        if [ -z "$diff_output" ]; then
+            printf "\t \u2714 No differences in .cog, .vrt & .tif files. \n\n"
+        else
+            printf "\t \u274c Outputs differ: \n\n" 
+            printf "$diff_output \n"
+            failed_fim_testcases=$((failed_fim_testcases + 1))
+        fi
+
+    printf "(6/${num_test_cases_fim})\t>>>> Assert Error thrown from no controls file parameter <<<<\n\n" 
         # Create and assign temp file
         tempfile=$(mktemp)
         # Test case
@@ -420,7 +440,7 @@ fim_test_cases() {
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi    
 
-    printf "(6/${num_test_cases_fim})\t>>>> Assert Error thrown from no library parameter <<<<\n\n" 
+    printf "(7/${num_test_cases_fim})\t>>>> Assert Error thrown from no library parameter <<<<\n\n" 
         # Create and assign temp file
         tempfile=$(mktemp)
         # Test case
@@ -442,7 +462,7 @@ fim_test_cases() {
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi 
 
-    printf "(7/${num_test_cases_fim})\t>>>> Assert Error thrown from no output file parameter <<<<\n\n" 
+    printf "(8/${num_test_cases_fim})\t>>>> Assert Error thrown from no output file parameter <<<<\n\n" 
         # Create and assign temp file
         tempfile=$(mktemp)
         # Test case
@@ -464,7 +484,7 @@ fim_test_cases() {
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi  
 
-    printf "(8/${num_test_cases_fim})\t>>>> Assert Error thrown from empty controls file <<<<\n\n" 
+    printf "(9/${num_test_cases_fim})\t>>>> Assert Error thrown from empty controls file <<<<\n\n" 
         # Create and assign temp file
         tempfile=$(mktemp)
         # Test case
@@ -487,7 +507,7 @@ fim_test_cases() {
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi  
     
-    #printf "(9/${num_test_cases_fim})\t>>>> Test flows2fim fim pull from S3 <<<<\n\n"
+    #printf "(10/${num_test_cases_fim})\t>>>> Test flows2fim fim pull from S3 <<<<\n\n"
 
     fim_passed=$((num_test_cases_fim - failed_fim_testcases))
     total_passed=$(( total_passed + fim_passed))
