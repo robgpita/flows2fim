@@ -85,7 +85,8 @@ compare_directories() {
             tempfile=$(mktemp)
             if [ "${filename:10:13}" = "vrt" ]; then
                 # The vrt file is a special case, since the call to gdalbuildvrt within the github actions runner
-                # behaves different. Essentially the vrt contains different values for the "relativeToVRT"
+                # behaves different. Essentially the vrt contains different values for the "relativeToVRT" because
+                # the default behaviour of the -rel flag to flows2fim fim is not working correctly.
                 # temp_out=$(diff -I '^      <SourceFilename' "$file" "$filepath2")
                 temp_out=$(diff "$file" "$filepath2")
                 if [ "$temp_out" != "" ]; then
@@ -381,6 +382,8 @@ fim_test_cases() {
                 -o $fim_test_output_formats/$output_file \
                 -rel false &> /dev/null
         done
+
+    ##TODO - Another test case that tests the default behavior of -rel. Previously had discrepancies with GHA runner and local.  
 
     printf "(4/${num_test_cases_fim})\t>>>> Regrssion Tests for different output formats <<<<\n\n" 
         # Capture the output of the comparison function as a variable 
