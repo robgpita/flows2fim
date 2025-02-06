@@ -84,7 +84,9 @@ compare_directories() {
         if [ -f "$filepath2" ] && [ "$fim" = "fim" ]; then
             tempfile=$(mktemp)
             if [ "${filename:10:13}" = "vrt" ]; then
-                # vrt files not necessary to compare with gdalcompare the files
+                # The vrt file is a special case, since the call to gdalbuildvrt within the github actions runner
+                # behaves different. Essentially the vrt contains different values for the "relativeToVRT"
+                # temp_out=$(diff -I '^      <SourceFilename' "$file" "$filepath2")
                 temp_out=$(diff "$file" "$filepath2")
                 if [ "$temp_out" != "" ]; then
                     printf "Output of diff "$file" "$filepath2" : \n\n $temp_out"
@@ -376,7 +378,8 @@ fim_test_cases() {
                 -c $controls_benchmark_dir/controls_2year.csv \
                 -fmt $format \
                 -lib $library_benchmark \
-                -o $fim_test_output_formats/$output_file &> /dev/null
+                -o $fim_test_output_formats/$output_file \
+                -rel false &> /dev/null
         done
 
     printf "(4/${num_test_cases_fim})\t>>>> Regrssion Tests for different output formats <<<<\n\n" 
