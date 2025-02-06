@@ -89,9 +89,10 @@ compare_directories() {
             if [ "${filename:10:13}" = "vrt" ]; then
                 temp_out=$(diff "$file" "$filepath2")
                 if [ "$temp_out" != "" ]; then
-                    printf "\t Output of diff "$file" "$filepath2" : \n\n $temp_out"
+                    printf "\t Output of diff: \n "$file" "$filepath2" \n $temp_out"
                     # printf "\t \u274c Files differ: $filename \n"
                 fi
+                continue
             fi
             gdalcompare.py $file $filepath2 &> "$tempfile"
             # cat "$tempfile"
@@ -103,7 +104,7 @@ compare_directories() {
             gdalcompare_difference_tolerance=2
             # If there are more than more differences than the tolerance value above, this test fails
             if (( $gdalcompare_output > $gdalcompare_difference_tolerance )); then
-                printf "\t \u274c Files differ: $filename \n"
+                printf "\n\t \u274c Files differ: $filename \n"
             fi
         elif [ -f "$filepath2" ]; then
             # Compare the files
@@ -381,7 +382,6 @@ fim_test_cases() {
                 -o $fim_test_output_formats/$output_file \
                 -rel false &> /dev/null
         done
-
 
     printf "(4/${num_test_cases_fim})\t>>>> Regrssion Tests for different output formats <<<<\n\n" 
         # Note:
