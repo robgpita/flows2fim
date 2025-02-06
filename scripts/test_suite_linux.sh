@@ -89,9 +89,9 @@ compare_directories() {
             if [ "${filename:10:13}" = "vrt" ]; then
                 temp_out=$(diff "$file" "$filepath2")
                 if [ "$temp_out" != "" ]; then
-                    printf "Output of diff "$file" "$filepath2" : \n\n $temp_out"
-                    printf "\t \u274c Files differ: $filename \n"
-                fi    
+                    printf "\t Output of diff "$file" "$filepath2" : \n\n $temp_out"
+                    # printf "\t \u274c Files differ: $filename \n"
+                fi
             fi
             gdalcompare.py $file $filepath2 &> "$tempfile"
             # cat "$tempfile"
@@ -411,7 +411,7 @@ fim_test_cases() {
         diff_output=$(diff "$fim_reference_output_formats/$output_file" "$fim_test_output_formats/$output_file")
         # If there is no differnce between files, test pass
         if [ -z "$diff_output" ]; then
-            printf "\t \u2714 No differences in .cog, .vrt & .tif files. \n\n"
+            printf "\t \u2714 No differences in .vrt files. \n\n"
         else
             printf "\t \u274c Outputs differ: \n\n" 
             printf "$diff_output \n"
