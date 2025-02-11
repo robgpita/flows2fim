@@ -38,7 +38,7 @@ Coming soon
    ```
 
 2. **Setup flows2fim**
-    1. **Download**
+    - **Option 1. - Download**
         - Go to the [**Releases**](https://github.com/ar-siddiqui/flows2fim/releases) page and download the `flows2fim-linux-amd64.tar.gz`
         - Extract it and move to a directory in PATH (e.g., `/usr/local/bin`) and make it executable:
             ```bash
@@ -46,7 +46,7 @@ Coming soon
             sudo mv flows2fim /usr/local/bin/
             sudo chmod +x /usr/local/bin/flows2fim
             ```
-    2. **Build from source**
+    - **Option 2. - Build from source**
         - cd into root of repository
         - Build container
             - `docker compose up -d`

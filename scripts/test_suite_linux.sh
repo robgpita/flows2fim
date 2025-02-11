@@ -70,6 +70,16 @@ test_help_statement() {
     flows2fim --help
 }
 
+exit_if_failure() {
+    local failed=$1
+    if [ "$failed" -gt 0 ]; then
+        printf "\n\t>>>> ${failed} TESTS FAILED <<<<\n\n"
+        exit 1
+    else
+        exit 0
+    fi
+}
+
 compare_directories() {
     # Set args
     local dir1=$1
@@ -167,7 +177,7 @@ controls_test_cases() {
             printf "\t $diff_output \n"
             failed_controls_testcases=$((failed_controls_testcases + 1))
         fi
-
+    
     ## Assert correct errors thrown
     printf "(3/${num_test_cases_controls})\t>>>> Assert Error thrown from no start reaches parameter <<<<\n\n"
         # Create and assign temp file
@@ -511,6 +521,7 @@ fim_test_cases() {
 
     fim_passed=$((num_test_cases_fim - failed_fim_testcases))
     total_passed=$(( total_passed + fim_passed))
+
 }
 
 validate_test_cases() {
@@ -535,15 +546,23 @@ if [ "$method" = "all" ]; then
     fim_test_cases
     validate_test_cases
     printf "\n\t>>>> (${total_passed}/${total_count}) TESTS PASSED <<<<\n\n"
+    total_failed=$((total_count - total_passed))
+    exit_if_failure $total_failed
 elif [ "$method" = "controls" ]; then
     controls_test_cases
     printf "\n\t>>>> (${total_passed}/${total_count}) TESTS PASSED <<<<\n\n"
+    total_failed=$((total_count - total_passed))
+    exit_if_failure $total_failed
 elif [ "$method" = "fim" ]; then
     fim_test_cases
     printf "\n\t>>>> (${total_passed}/${total_count}) TESTS PASSED <<<<\n\n"
+    total_failed=$((total_count - total_passed))
+    exit_if_failure $total_failed
 elif [ "$method" = "validate" ]; then
     validate_test_cases
     printf "\n\t>>>> (${total_passed}/${total_count}) TESTS PASSED <<<<\n\n"
+    total_failed=$((total_count - total_passed))
+    exit_if_failure $total_failed
 else
     printf "\n\t>>>> NO TEST CASES WERE RUN <<<<\n\n"
     usage
