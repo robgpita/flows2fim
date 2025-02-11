@@ -35,10 +35,10 @@ FIM Library Specifications:
 
 
 CLI flag syntax. The following forms are permitted:
--flag
---flag   // double dashes are also permitted
--flag=x
--flag x  // non-boolean flags only
+	-flag
+	--flag   // double dashes are also permitted
+	-flag=x
+	-flag x  // non-boolean flags only
 Arguments:`
 
 var gdalCommands = map[string]string{
