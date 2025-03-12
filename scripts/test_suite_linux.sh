@@ -366,7 +366,7 @@ controls_test_cases() {
 }
 
 fim_test_cases() {
-    local num_test_cases_fim=9
+    local num_test_cases_fim=8
     local failed_fim_testcases=0
     total_count=$(( total_count + num_test_cases_fim))
     # If previous directories exists, remove them
@@ -419,15 +419,10 @@ fim_test_cases() {
                 -c $controls_benchmark_dir/controls_2year.csv \
                 -fmt $format \
                 -lib $library_benchmark \
-                -o $fim_test_output_formats/$output_file \
-                -rel false &> /dev/null
+                -o $fim_test_output_formats/$output_file &> /dev/null
         done
 
     printf "(4/${num_test_cases_fim})\t>>>> Regression Tests for different output formats <<<<\n\n"
-        # Note:
-        # The vrt file creation with -rel true (default behavior) is a failing case,
-        # because the vrt contains different values for the "relativeToVRT". This is due to
-        # the behavior of the -rel flag to flows2fim fim not working as expected.
         # Capture the output of the comparison function as a variable
         diff_output=$(compare_directories "$fim_reference_output_formats" "$fim_test_output_formats" "fim")
         # If there is no difference between directories, test pass
@@ -439,26 +434,7 @@ fim_test_cases() {
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi
 
-    printf "(5/${num_test_cases_fim})\t>>>> Assert flows2fim fim -rel argument creates .vrt with correct xml output <<<<\n\n"
-        output_file=fim_2year_test_rel_false.vrt
-        $cmd fim \
-            -c $controls_benchmark_dir/controls_2year.csv \
-            -fmt "vrt" \
-            -lib $library_benchmark \
-            -o $fim_test_output_formats/$output_file \
-            -rel false &> /dev/null
-
-        diff_output=$(diff "$fim_reference_output_formats/$output_file" "$fim_test_output_formats/$output_file")
-        # If there is no differnce between files, test pass
-        if [ -z "$diff_output" ]; then
-            printf "\t \u2714 No differences in .vrt files. \n\n"
-        else
-            printf "\t \u274c Outputs differ: \n\n"
-            printf "$diff_output \n"
-            failed_fim_testcases=$((failed_fim_testcases + 1))
-        fi
-
-    printf "(6/${num_test_cases_fim})\t>>>> Assert Error thrown from no controls file parameter <<<<\n\n"
+    printf "(5/${num_test_cases_fim})\t>>>> Assert Error thrown from no controls file parameter <<<<\n\n"
         # Create and assign temp file
         tempfile=$(mktemp)
         # Test case
@@ -480,7 +456,7 @@ fim_test_cases() {
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi
 
-    printf "(7/${num_test_cases_fim})\t>>>> Assert Error thrown from no library parameter <<<<\n\n"
+    printf "(6/${num_test_cases_fim})\t>>>> Assert Error thrown from no library parameter <<<<\n\n"
         # Create and assign temp file
         tempfile=$(mktemp)
         # Test case
@@ -489,11 +465,11 @@ fim_test_cases() {
                 -fmt "tif" \
                 -o $fim_test_outputs/fim_test.tif &> "$tempfile"
         # Here we use head -n 1 to capture the first line redirected to the tmp file
-        first_line=$(tail -n 1 "$tempfile")
+        first_line=$(cat "$tempfile" | sed -n '2 p')
         # Remove temp file
         rm "$tempfile"
         # Assign error string
-        assert_expected_output_1="Error: error running gdalwarp: exit status 2"
+        assert_expected_output_1="Missing required flags"
         # Compare Error messaging and print
         if [ "$first_line" = "$assert_expected_output_1" ]; then
             printf "\t \u2714 Correct error thrown. \n\n"
@@ -502,7 +478,7 @@ fim_test_cases() {
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi
 
-    printf "(8/${num_test_cases_fim})\t>>>> Assert Error thrown from no output file parameter <<<<\n\n"
+    printf "(7/${num_test_cases_fim})\t>>>> Assert Error thrown from no output file parameter <<<<\n\n"
         # Create and assign temp file
         tempfile=$(mktemp)
         # Test case
@@ -524,7 +500,7 @@ fim_test_cases() {
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi
 
-    printf "(9/${num_test_cases_fim})\t>>>> Assert Error thrown from empty controls file <<<<\n\n"
+    printf "(8/${num_test_cases_fim})\t>>>> Assert Error thrown from empty controls file <<<<\n\n"
         # Create and assign temp file
         tempfile=$(mktemp)
         # Test case
@@ -547,7 +523,7 @@ fim_test_cases() {
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi
 
-    #printf "(10/${num_test_cases_fim})\t>>>> Test flows2fim fim pull from S3 <<<<\n\n"
+    #printf "(9/${num_test_cases_fim})\t>>>> Test flows2fim fim pull from S3 <<<<\n\n"
 
     fim_passed=$((num_test_cases_fim - failed_fim_testcases))
     total_passed=$(( total_passed + fim_passed))

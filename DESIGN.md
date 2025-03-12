@@ -8,7 +8,12 @@
 
 - `scripts`: Includes useful scripts for building, testing, and more.
 
-## Design Decisions
+## Design Thoughts
+
+### FIM
+1. GDAL will always use relative paths if output and inputs are in same lineage, this was the reason for removing -rel flag
+1. gdalbuildvrt don't support cloud relative paths. This does not work `gdalbuildvrt /vsis3/fimc-data/fim2d/prototype/2024_03_13/vsi_relative.vrt ./8489318/z0_0/f_1560.tif ./8490370/z0_0/f_130.tif`
+1. To simplify fim.go, all paths are converted to absolute paths and the relative logic is left to `gdalbuildvrt`
 
 ### Validate
 1. A  `-o_<type>` convention is used to allow for multiple outputs across subcommands.

@@ -16,8 +16,7 @@
 |                                                 |                      |                      |                   |
 | **fim**                                         |                      |                      |                   |
 | Generate 2,5,10,25,50,100 yr fim.tif files      | &#9745;              | &#9745;              |                   |
-| Generate fim files in different output formats  | &#9745;              | &#9746;              |                   |
-| `-rel false`                                    |                      |                      | &#9746;           |
+| Generate fim files in different output formats  | &#9745;              | &#9745;              |                   |
 | missing `-c`                                    |                      |                      | &#9745;           |
 | missing `-l`                                    |                      |                      | &#9745;           |
 | missing `-o`                                    |                      |                      | &#9745;           |
