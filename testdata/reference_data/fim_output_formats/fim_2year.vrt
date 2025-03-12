@@ -5,7 +5,7 @@
     <NoDataValue>-9999</NoDataValue>
     <ColorInterp>Gray</ColorInterp>
     <ComplexSource>
-      <SourceFilename relativeToVRT="0">../../reference_data/library/24274741/z_nd/f_17668.tif</SourceFilename>
+      <SourceFilename relativeToVRT="0">/home/runner/work/flows2fim/flows2fim/testdata/reference_data/library/24274741/z_nd/f_17668.tif</SourceFilename>
       <SourceBand>1</SourceBand>
       <SourceProperties RasterXSize="1185" RasterYSize="1163" DataType="Float32" BlockXSize="1185" BlockYSize="512" />
       <SrcRect xOff="0" yOff="0" xSize="1185" ySize="1163" />

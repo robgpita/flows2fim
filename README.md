@@ -1,4 +1,7 @@
 # `flows2fim`
+
+[![Build and Test - Linux](https://github.com/ar-siddiqui/flows2fim/actions/workflows/build_and_test_linux.yml/badge.svg?event=push)](https://github.com/ar-siddiqui/flows2fim/actions/workflows/build_and_test_linux.yml)
+
 ![alt text](image.png)
 ## Overview
 `flows2fim` is a command line utility program that creates composite FIMs for different flow conditions utilizing input FIM libraries and rating curves database.

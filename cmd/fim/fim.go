@@ -14,7 +14,6 @@ import (
 var usage string = `Usage of fim:
 Given a control table and a fim library folder, create a flood inundation VRT or a merged TIFF for the control conditions.
 GDAL VSI paths can be used, given GDAL must have access to cloud creds.
-GDAL does not support relative cloud paths.
 
 FIM Library Specifications:
 - All maps should have same CRS, Resolution, vertical units (if any), and nodata value
@@ -76,11 +75,9 @@ func Run(args []string) (gdalArgs []string, err error) {
 	}
 
 	var controlsFile, fimLibDir, outputFile, outputFormat string
-	var relative bool
 
 	// Define flags using flags.StringVar
-	flags.StringVar(&fimLibDir, "lib", ".", "Directory containing FIM Library. GDAL VSI paths can be used, given GDAL must have access to cloud creds")
-	flags.BoolVar(&relative, "rel", true, "If relative paths should be used in VRT")
+	flags.StringVar(&fimLibDir, "lib", "", "Directory containing FIM Library. GDAL VSI paths can be used, given GDAL must have access to cloud creds")
 	flags.StringVar(&controlsFile, "c", "", "Path to the controls CSV file")
 	flags.StringVar(&outputFormat, "fmt", "vrt", "Output format: 'vrt', 'cog' or 'tif'")
 	flags.StringVar(&outputFile, "o", "", "Output FIM file path")
@@ -105,13 +102,7 @@ func Run(args []string) (gdalArgs []string, err error) {
 		return []string{}, fmt.Errorf("%[1]s is not available. Please install GDAL and ensure %[1]s is in your PATH", gdalCommands[outputFormat])
 	}
 
-	if strings.HasPrefix(fimLibDir, "/vsi") || strings.HasPrefix(outputFile, "/vsi") {
-		relative = false
-		// gdalbuildvrt don't support cloud relative paths
-		// this does not work gdalbuildvrt /vsis3/fimc-data/fim2d/prototype/2024_03_13/vsi_relative.vrt ./8489318/z0_0/f_1560.tif ./8490370/z0_0/f_130.tif
-	}
-
-	var absOutputPath, absFimLibPath, absOutputDir string
+	var absOutputPath, absFimLibPath string
 	if strings.HasPrefix(outputFile, "/vsi") {
 		absOutputPath = outputFile
 	} else {
@@ -120,7 +111,6 @@ func Run(args []string) (gdalArgs []string, err error) {
 			return []string{}, fmt.Errorf("error getting absolute path for output file: %v", err)
 		}
 	}
-	absOutputDir = filepath.Dir(absOutputPath)
 
 	if strings.HasPrefix(fimLibDir, "/vsi") {
 		absFimLibPath = fimLibDir
@@ -155,20 +145,13 @@ func Run(args []string) (gdalArgs []string, err error) {
 		record[2] = strings.Replace(record[2], ".", "_", -1) // Replace '.' with '_'
 		folderName := filepath.Join(absFimLibPath, reachID, fmt.Sprintf("z_%s", record[2]))
 		fileName := fmt.Sprintf("f_%s.tif", record[1])
-		filePath := filepath.Join(folderName, fileName)
-
-		if relative {
-			filePath, err = filepath.Rel(absOutputDir, filePath)
-			if err != nil {
-				return []string{}, err
-			}
-		}
+		absTifPath := filepath.Join(folderName, fileName)
 
 		// join on windows may cause \vsi
-		if strings.HasPrefix(filePath, `\vsi`) {
-			filePath = strings.ReplaceAll(filePath, `\`, "/")
+		if strings.HasPrefix(absTifPath, `\vsi`) {
+			absTifPath = strings.ReplaceAll(absTifPath, `\`, "/")
 		}
-		tifFiles = append(tifFiles, filePath)
+		tifFiles = append(tifFiles, absTifPath)
 	}
 
 	// Write file paths to a temporary file
@@ -201,9 +184,6 @@ func Run(args []string) (gdalArgs []string, err error) {
 	}
 
 	cmd := exec.Command(gdalCommands[outputFormat], gdalArgs...)
-	if !strings.HasPrefix(absOutputPath, "/vsi") {
-		cmd.Dir = absOutputDir
-	}
 	// Redirecting the output to the standard output of the Go program
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
