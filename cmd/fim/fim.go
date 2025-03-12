@@ -77,7 +77,7 @@ func Run(args []string) (gdalArgs []string, err error) {
 	var controlsFile, fimLibDir, outputFile, outputFormat string
 
 	// Define flags using flags.StringVar
-	flags.StringVar(&fimLibDir, "lib", ".", "Directory containing FIM Library. GDAL VSI paths can be used, given GDAL must have access to cloud creds")
+	flags.StringVar(&fimLibDir, "lib", "", "Directory containing FIM Library. GDAL VSI paths can be used, given GDAL must have access to cloud creds")
 	flags.StringVar(&controlsFile, "c", "", "Path to the controls CSV file")
 	flags.StringVar(&outputFormat, "fmt", "vrt", "Output format: 'vrt', 'cog' or 'tif'")
 	flags.StringVar(&outputFile, "o", "", "Output FIM file path")
