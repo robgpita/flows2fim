@@ -53,6 +53,39 @@ func writeFileList(fileList []string) (string, error) {
 	return tmpfile.Name(), nil
 }
 
+func createTempVRT(inputFileListPath, absOutputPath string) (string, error) {
+
+	// Create intermediate directories if they do not exist
+	if err := os.MkdirAll(filepath.Dir(absOutputPath), 0755); err != nil {
+		return "", fmt.Errorf("could not create directories for %s: %v", absOutputPath, err)
+	}
+
+	// We don't really need os.CreateTemp, but we are using it to generate random file name
+	tempVRTFile, err := os.CreateTemp(filepath.Dir(absOutputPath), "~f2f_*.tmp")
+	if err != nil {
+		return "", fmt.Errorf("error creating temporary VRT file: %v", err)
+	}
+	tempVRTPath := tempVRTFile.Name()
+	tempVRTFile.Close() // Close now, gdalbuildvrt will write to it
+
+	// Build temporary VRT file
+	vrtArgs := []string{"-input_file_list", inputFileListPath, tempVRTPath}
+	vrtCmd := exec.Command("gdalbuildvrt", vrtArgs...)
+	vrtCmd.Stdout = os.Stdout
+	vrtCmd.Stderr = os.Stderr
+
+	slog.Debug("Creating temporary VRT file",
+		"command", fmt.Sprintf("gdalbuildvrt %s", strings.Join(vrtArgs, " ")),
+		"tempVRT", tempVRTPath,
+	)
+
+	if err := vrtCmd.Run(); err != nil {
+		return "", fmt.Errorf("error running gdalbuildvrt: %v", err)
+	}
+
+	return tempVRTPath, nil
+}
+
 func Run(args []string) (gdalArgs []string, err error) {
 	flags := flag.NewFlagSet("fim", flag.ExitOnError)
 	flags.Usage = func() {
@@ -149,40 +182,17 @@ func Run(args []string) (gdalArgs []string, err error) {
 	}
 
 	// Write file paths to a temporary file
-	tempFileName, err := writeFileList(tifFiles)
+	inputFileListPath, err := writeFileList(tifFiles)
 	if err != nil {
 		return []string{}, fmt.Errorf("error writing file list to temporary file: %v", err)
 	}
-	defer os.Remove(tempFileName)
+	defer os.Remove(inputFileListPath)
 
-	// Create intermediate directories if they do not exist
-	if err := os.MkdirAll(filepath.Dir(absOutputPath), 0755); err != nil {
-		return []string{}, fmt.Errorf("could not create directories for %s: %v", absOutputPath, err)
-	}
-
-	// We don't really need os.CreateTemp, but we are using it to generate random file name
-	tempVRTFile, err := os.CreateTemp(filepath.Dir(absOutputPath), "~f2f_*.tmp")
+	tempVRTPath, err := createTempVRT(inputFileListPath, absOutputPath)
 	if err != nil {
-		return []string{}, fmt.Errorf("error creating temporary VRT file: %v", err)
+		return []string{}, fmt.Errorf("error creating temp vrt: %v", err)
 	}
-	tempVRTPath := tempVRTFile.Name()
-	tempVRTFile.Close()          // Close now, gdalbuildvrt will write to it
-	defer os.Remove(tempVRTPath) // Always attempt to remove tempfile even if file is already removed
-
-	// Build temporary VRT file
-	vrtArgs := []string{"-input_file_list", tempFileName, tempVRTPath}
-	vrtCmd := exec.Command("gdalbuildvrt", vrtArgs...)
-	vrtCmd.Stdout = os.Stdout
-	vrtCmd.Stderr = os.Stderr
-
-	slog.Debug("Creating temporary VRT file",
-		"command", fmt.Sprintf("gdalbuildvrt %s", strings.Join(vrtArgs, " ")),
-		"tempVRT", tempVRTPath,
-	)
-
-	if err := vrtCmd.Run(); err != nil {
-		return []string{}, fmt.Errorf("error running gdalbuildvrt: %v", err)
-	}
+	defer os.Remove(tempVRTPath)
 
 	if outputFormat == "vrt" {
 		// For VRT, simply move the temporary file to the final destination for atomicity
