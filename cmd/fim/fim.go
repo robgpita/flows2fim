@@ -13,8 +13,8 @@ import (
 )
 
 var usage string = `Usage of fim:
-Given a control table and a fim library folder, create a flood inundation VRT or a merged TIFF for the control conditions.
-GDAL VSI paths can be used, given GDAL must have access to cloud creds.
+Given a control table and a fim library folder, create a composite flood inundation map for the control conditions.
+GDAL VSI paths can be used (only for library and not for output), given GDAL must have access to cloud creds.
 
 FIM Library Specifications:
 - All maps should have same CRS, Resolution, vertical units (if any), and nodata value
@@ -35,15 +35,6 @@ FIM Library Specifications:
 
 
 Arguments:` // Usage should be always followed by PrintDefaults()
-
-var gdalCommands = map[string]string{
-	"vrt": "gdalbuildvrt",
-	"tif": "gdalwarp",
-	"cog": "gdalwarp",
-	// not using gdal_merge since gdalwarp allow writing to COG while gdam_merge does not
-	// also, gdalwarp is more powerful than gdal_merge
-	// also it has consistent name across plateforms unlike gdal_merge vs gdal_merge.py
-}
 
 func writeFileList(fileList []string) (string, error) {
 	tmpfile, err := os.CreateTemp("", "filelist-*.txt")
@@ -92,10 +83,17 @@ func Run(args []string) (gdalArgs []string, err error) {
 		return []string{}, fmt.Errorf("missing required flags")
 	}
 
-	// Check if gdalbuildvrt or GDAL tool is available
-	if !utils.CheckGDALToolAvailable(gdalCommands[outputFormat]) {
-		slog.Error("GDAL tool missing", "tool", gdalCommands[outputFormat])
-		return []string{}, fmt.Errorf("%[1]s is not available. Please install GDAL and ensure %[1]s is in your PATH", gdalCommands[outputFormat])
+	// Check if required GDAL tools are available
+	requiredTools := []string{"gdalbuildvrt"}
+	if outputFormat != "vrt" {
+		requiredTools = append(requiredTools, "gdal_translate")
+	}
+
+	for _, tool := range requiredTools {
+		if !utils.CheckGDALToolAvailable(tool) {
+			slog.Error("GDAL tool missing", "tool", tool)
+			return []string{}, fmt.Errorf("%[1]s is not available. Please install GDAL and ensure %[1]s is in your PATH", tool)
+		}
 	}
 
 	var absOutputPath, absFimLibPath string
@@ -157,40 +155,78 @@ func Run(args []string) (gdalArgs []string, err error) {
 	}
 	defer os.Remove(tempFileName)
 
-	switch outputFormat {
-	case "vrt":
-		gdalArgs = []string{"-input_file_list", tempFileName, absOutputPath}
-
-	case "tif":
-		gdalArgs = []string{
-			"-co", "COMPRESS=DEFLATE", // we are not doing predictor because we are not sure what will be our input tifs format https://kokoalberti.com/articles/geotiff-compression-optimization-guide/?ref=feed.terramonitor.com
-			"--optfile", tempFileName,
-			"-overwrite", absOutputPath,
-		}
-
-	case "cog":
-		// Simplified COG creation
-		gdalArgs = []string{
-			"-co", "COMPRESS=DEFLATE",
-			"-of", "COG",
-			"-overwrite",
-			"--optfile", tempFileName,
-			absOutputPath,
-		}
+	// Create intermediate directories if they do not exist
+	if err := os.MkdirAll(filepath.Dir(absOutputPath), 0755); err != nil {
+		return []string{}, fmt.Errorf("could not create directories for %s: %v", absOutputPath, err)
 	}
 
-	cmd := exec.Command(gdalCommands[outputFormat], gdalArgs...)
+	// We don't really need os.CreateTemp, but we are using it to generate random file name
+	tempVRTFile, err := os.CreateTemp(filepath.Dir(absOutputPath), "~f2f_*.tmp")
+	if err != nil {
+		return []string{}, fmt.Errorf("error creating temporary VRT file: %v", err)
+	}
+	tempVRTPath := tempVRTFile.Name()
+	tempVRTFile.Close()          // Close now, gdalbuildvrt will write to it
+	defer os.Remove(tempVRTPath) // Always attempt to remove tempfile even if file is already removed
 
-	slog.Debug("Executing GDAL command",
-		"command", fmt.Sprintf("%s %s", gdalCommands[outputFormat], strings.Join(gdalArgs, " ")),
-		"workdir", cmd.Dir,
+	// Build temporary VRT file
+	vrtArgs := []string{"-input_file_list", tempFileName, tempVRTPath}
+	vrtCmd := exec.Command("gdalbuildvrt", vrtArgs...)
+	vrtCmd.Stdout = os.Stdout
+	vrtCmd.Stderr = os.Stderr
+
+	slog.Debug("Creating temporary VRT file",
+		"command", fmt.Sprintf("gdalbuildvrt %s", strings.Join(vrtArgs, " ")),
+		"tempVRT", tempVRTPath,
 	)
 
-	// Redirecting the output to the standard output of the Go program
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return []string{}, fmt.Errorf("error running %s: %v", gdalCommands[outputFormat], err)
+	if err := vrtCmd.Run(); err != nil {
+		return []string{}, fmt.Errorf("error running gdalbuildvrt: %v", err)
+	}
+
+	if outputFormat == "vrt" {
+		// For VRT, simply move the temporary file to the final destination for atomicity
+		slog.Debug("Moving temporary VRT to final destination",
+			"from", tempVRTPath,
+			"to", absOutputPath)
+
+		if err := os.Rename(tempVRTPath, absOutputPath); err != nil {
+			return []string{}, fmt.Errorf("error renaming temp file %s to %s: %v", tempVRTPath, absOutputPath, err)
+		}
+
+	} else {
+		// For TIF or COG, use gdal_translate to convert the VRT
+		var translateArgs []string
+
+		switch outputFormat {
+		case "tif":
+			translateArgs = []string{
+				"-co", "COMPRESS=DEFLATE",
+				"-of", "GTiff",
+				tempVRTPath,
+				absOutputPath,
+			}
+		case "cog":
+			translateArgs = []string{
+				"-co", "COMPRESS=DEFLATE",
+				"-of", "COG",
+				tempVRTPath,
+				absOutputPath,
+			}
+		}
+
+		translateCmd := exec.Command("gdal_translate", translateArgs...)
+		translateCmd.Stdout = os.Stdout
+		translateCmd.Stderr = os.Stderr
+
+		slog.Debug("Converting VRT to final format",
+			"command", fmt.Sprintf("gdal_translate %s", strings.Join(translateArgs, " ")),
+			"format", outputFormat,
+		)
+
+		if err := translateCmd.Run(); err != nil {
+			return []string{}, fmt.Errorf("error converting VRT to %s: %v", outputFormat, err)
+		}
 	}
 
 	fmt.Printf("Composite FIM created at %s\n", absOutputPath)
