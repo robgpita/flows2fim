@@ -2,9 +2,11 @@ package fim
 
 import (
 	"encoding/csv"
+	"encoding/xml"
 	"flag"
 	"flows2fim/pkg/utils"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -169,12 +171,13 @@ func Run(args []string) (gdalArgs []string, err error) {
 		flags.PrintDefaults()
 	}
 
-	var controlsFile, fimLibDir, outputFile, outputFormat string
+	var controlsFile, fimLibDir, libType, outputFormat, outputFile string
 
 	// Define flags using flags.StringVar
 	flags.StringVar(&fimLibDir, "lib", "", "Directory containing FIM Library. GDAL VSI paths can be used, given GDAL must have access to cloud creds")
 	flags.StringVar(&controlsFile, "c", "", "Path to the controls CSV file")
 	flags.StringVar(&outputFormat, "fmt", "vrt", "Output format: 'vrt', 'cog' or 'tif'")
+	flags.StringVar(&libType, "type", "", "Library type: 'depth' or 'extent'")
 	flags.StringVar(&outputFile, "o", "", "Output FIM file path")
 
 	// Parse flags from the arguments
@@ -185,11 +188,15 @@ func Run(args []string) (gdalArgs []string, err error) {
 	outputFormat = strings.ToLower(outputFormat) // COG, cog, VRT, vrt all okay
 
 	// Validate required flags
-	if controlsFile == "" || fimLibDir == "" || outputFile == "" {
+	if controlsFile == "" || fimLibDir == "" || libType == "" || outputFile == "" {
 		fmt.Println(controlsFile, fimLibDir, outputFile)
 		fmt.Println("Missing required flags")
 		flags.PrintDefaults()
 		return []string{}, fmt.Errorf("missing required flags")
+	}
+
+	if libType != "depth" && libType != "extent" {
+		return []string{}, fmt.Errorf("library type must be either 'depth' or 'extent'")
 	}
 
 	// Check if required GDAL tools are available
@@ -270,48 +277,92 @@ func Run(args []string) (gdalArgs []string, err error) {
 	}
 	defer os.Remove(tempVRTPath)
 
+	var modVRTPath string
+	// gdal pixel functions require minimum of 2 bands
+	// gdal_translate is painfully slow when pixel function is there,
+	// hence we only add pixel func when it is necessary which is only for extent library
+	// pixel function max is available starting gdal 3.8.0
+	if len(tifFiles) > 1 && libType == "extent" {
+		modVRTPath, err = addVRTPixelFunc(tempVRTPath)
+		if err != nil {
+			return []string{}, fmt.Errorf("error modifying temp vrt: %v", err)
+		}
+		defer os.Remove(modVRTPath)
+	} else {
+		modVRTPath = tempVRTPath
+	}
+
 	if outputFormat == "vrt" {
 		// For VRT, simply move the temporary file to the final destination for atomicity
 		slog.Debug("Moving temporary VRT to final destination",
-			"from", tempVRTPath,
+			"from", modVRTPath,
 			"to", absOutputPath)
 
-		if err := os.Rename(tempVRTPath, absOutputPath); err != nil {
+		if err := os.Rename(modVRTPath, absOutputPath); err != nil {
 			return []string{}, fmt.Errorf("error renaming temp file %s to %s: %v", tempVRTPath, absOutputPath, err)
 		}
 
 	} else {
 		// For TIF or COG, use gdal_translate to convert the VRT
-		var translateArgs []string
+		translateArgs := []string{
+			"-co", "COMPRESS=DEFLATE",
+			"-co", "NUM_THREADS=ALL_CPUS",
+			"-if", "VRT",
+			"-of", "GTiff",
+			modVRTPath,
+			"",
+		}
 
+		// Directly creating COG with Pixel Function is hours magnitude slower than first creating GTiff and then converting to COG
 		switch outputFormat {
 		case "tif":
-			translateArgs = []string{
-				"-co", "COMPRESS=DEFLATE",
-				"-of", "GTiff",
-				tempVRTPath,
-				absOutputPath,
-			}
+			translateArgs[7] = absOutputPath
 		case "cog":
-			translateArgs = []string{
-				"-co", "COMPRESS=DEFLATE",
-				"-of", "COG",
-				tempVRTPath,
-				absOutputPath,
+			tempTIFFile, err := os.CreateTemp(filepath.Dir(absOutputPath), "~f2f_*.tmp")
+			if err != nil {
+				return []string{}, fmt.Errorf("error creating temporary TIF file: %v", err)
 			}
+			tempTIFFile.Close()
+			tempTIFPath := tempTIFFile.Name()
+			translateArgs[7] = tempTIFPath
+			defer os.Remove(tempTIFPath)
 		}
 
 		translateCmd := exec.Command("gdal_translate", translateArgs...)
 		translateCmd.Stdout = os.Stdout
 		translateCmd.Stderr = os.Stderr
 
-		slog.Debug("Converting VRT to final format",
+		slog.Debug("Converting VRT to TIFF",
 			"command", fmt.Sprintf("gdal_translate %s", strings.Join(translateArgs, " ")),
 			"format", outputFormat,
 		)
 
 		if err := translateCmd.Run(); err != nil {
-			return []string{}, fmt.Errorf("error converting VRT to %s: %v", outputFormat, err)
+			return []string{}, fmt.Errorf("error converting VRT to GTIFF: %v", err)
+		}
+
+		if outputFormat == "cog" {
+			// Convert to COG
+			cogArgs := []string{
+				"-co", "COMPRESS=DEFLATE",
+				"-co", "NUM_THREADS=ALL_CPUS",
+				"-if", "GTiff",
+				"-of", "COG",
+				translateArgs[7], // Use the temporary TIF file
+				absOutputPath,
+			}
+
+			cogCmd := exec.Command("gdal_translate", cogArgs...)
+			cogCmd.Stdout = os.Stdout
+			cogCmd.Stderr = os.Stderr
+
+			slog.Debug("Converting TIF to COG",
+				"command", fmt.Sprintf("gdal_translate %s", strings.Join(cogArgs, " ")),
+			)
+
+			if err := cogCmd.Run(); err != nil {
+				return []string{}, fmt.Errorf("error converting TIF to COG: %v", err)
+			}
 		}
 	}
 
