@@ -307,7 +307,6 @@ func Run(args []string) (gdalArgs []string, err error) {
 		translateArgs := []string{
 			"-co", "COMPRESS=DEFLATE",
 			"-co", "NUM_THREADS=ALL_CPUS",
-			"-if", "VRT",
 			"-of", "GTiff",
 			modVRTPath,
 			"",
