@@ -86,6 +86,82 @@ func createTempVRT(inputFileListPath, absOutputPath string) (string, error) {
 	return tempVRTPath, nil
 }
 
+func addVRTPixelFunc(vrtPath string) (string, error) {
+	// Open the original VRT file for reading
+	inFile, err := os.Open(vrtPath)
+	if err != nil {
+		return "", fmt.Errorf("error opening VRT file: %v", err)
+	}
+	defer inFile.Close()
+
+	// Create a temporary file to write the modified XML
+	modVRTFile, err := os.CreateTemp(filepath.Dir(vrtPath), "~f2f_*.tmp")
+	if err != nil {
+		return "", fmt.Errorf("error creating temp file: %v", err)
+	}
+
+	modVRTPath := modVRTFile.Name()
+	defer modVRTFile.Close()
+
+	encoder := xml.NewEncoder(modVRTFile)
+	decoder := xml.NewDecoder(inFile)
+
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return "", fmt.Errorf("error decoding token: %v", err)
+		}
+
+		switch se := tok.(type) {
+		case xml.StartElement:
+			if se.Name.Local == "VRTRasterBand" {
+
+				se.Attr = append(se.Attr, xml.Attr{
+					Name:  xml.Name{Local: "subClass"},
+					Value: "VRTDerivedRasterBand",
+				})
+
+				// Encode the modified start element
+				if err := encoder.EncodeToken(se); err != nil {
+					return "", fmt.Errorf("error encoding VRTRasterBand: %v", err)
+				}
+
+				// Create and encode PixelFunctionType element
+				pixelFunc := xml.StartElement{Name: xml.Name{Local: "PixelFunctionType"}}
+				if err := encoder.EncodeToken(pixelFunc); err != nil {
+					return "", fmt.Errorf("error encoding PixelFunctionType start: %v", err)
+				}
+				if err := encoder.EncodeToken(xml.CharData("max")); err != nil {
+					return "", fmt.Errorf("error encoding PixelFunctionType value: %v", err)
+				}
+				if err := encoder.EncodeToken(pixelFunc.End()); err != nil {
+					return "", fmt.Errorf("error encoding PixelFunctionType end: %v", err)
+				}
+			} else {
+				// Encode other elements as-is
+				if err := encoder.EncodeToken(se); err != nil {
+					return "", fmt.Errorf("error encoding token: %v", err)
+				}
+			}
+		default:
+			// Encode all other tokens as-is
+			if err := encoder.EncodeToken(tok); err != nil {
+				return "", fmt.Errorf("error encoding token: %v", err)
+			}
+		}
+	}
+
+	// Flush encoder to ensure all data is written
+	if err := encoder.Flush(); err != nil {
+		return "", fmt.Errorf("error flushing encoder: %v", err)
+	}
+
+	return modVRTPath, nil
+}
+
 func Run(args []string) (gdalArgs []string, err error) {
 	flags := flag.NewFlagSet("fim", flag.ExitOnError)
 	flags.Usage = func() {
