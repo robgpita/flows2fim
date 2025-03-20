@@ -16,7 +16,7 @@ The following advanced commands are available but are not commonly needed:
  - `validate`: Given a FIM library folder and a rating curves database, validate there is one-to-one correspondence between the entries of the rating curves table and FIM library objects.
 
 ### Dependencies:
- - `GDAL` must be installed and available in PATH
+ - `GDAL` must be installed and available in PATH. Must be version 3.8 or greater (although if only working with depth libraries, 3.4 should be sufficient)
 
 ### Units:
 Current support is for English units. The flow values must be in `cfs`

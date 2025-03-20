@@ -6,7 +6,7 @@ Coming soon
 
 ## Windows
 
-1. **Install GDAL**
+1. **Install GDAL (=> 3.8)**
    - The easiest way is via [**OSGeo4W**](https://trac.osgeo.org/osgeo4w/#QuickStartforOSGeo4WUsers)
 
 2. **Setup flows2fim**
@@ -30,12 +30,9 @@ Coming soon
 
 ## Linux
 
-1. **Install GDAL**
+1. **Install GDAL (=>3.8)**
 
-    _For Ubuntu_
-   ```bash
-   sudo apt-get update && sudo apt-get install -y gdal-bin
-   ```
+   There are various ways to install GDAL. See GDAL documentation for more details.
 
 2. **Setup flows2fim**
     - **Option 1. - Download**
@@ -53,7 +50,7 @@ Coming soon
         - Get flows2fim CONTAINER_ID
             - `CONTAINER_ID=$(docker ps -q | head -n 1)`
         - Issue build script
-            - `docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-linux-amd64.sh"` 
+            - `docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-linux-amd64.sh"`
         - Shutdown container
             - `docker compose down`
         - Move executable to $PATH
