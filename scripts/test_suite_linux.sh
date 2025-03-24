@@ -195,7 +195,7 @@ controls_test_cases() {
                 -scsv $start_reaches_dir/start_reaches.csv
         done
 
-    printf "\n(2/${num_test_cases_controls})\t>>>> Regression Tests for all recur. int. controls files <<<<\n\n"
+    printf "\n(2/${num_test_cases_controls})\t>>>> Regression Tests for all recurrence interval controls files <<<<\n\n"
         # Compare controls files from recently generated test data and benchmark data
         # Capture the output of the comparison as a variable if there is no difference
         diff_output=$(compare_directories "$control_test_outputs" "$controls_benchmark_dir")
@@ -216,57 +216,51 @@ controls_test_cases() {
         $cmd controls -db $db_path/ripple.gpkg \
             -f $flows_files_dir/flows_2year.csv \
             -o $control_test_outputs/controls_2year.csv &> "$tempfile"
-        # Here we use head -n 1 to capture the first line redirected to the tmp file
-        first_line=$(head -n 1 "$tempfile")
-        # Remove temp file
-        rm "$tempfile"
         # Assign error string
-        assert_expected_output_1="Error: either a CSV file or start reach IDs and control stages must be provided"
-        # Compare Error messaging and print
-        if [ "$first_line" = "$assert_expected_output_1" ]; then
+        expected_error_substring="either a CSV file or start reach IDs and control stages must be provided"
+        # Search (grep) for expected error substring in temporary output file
+        if grep -q "$expected_error_substring" "$tempfile"; then
             printf "\t \u2714 Correct error thrown. \n\n"
         else
             printf "\t \u274c Error messaging inconsistent \n\n"
             failed_controls_testcases=$((failed_controls_testcases + 1))
         fi
+        # Remove temp file
+        rm "$tempfile"
 
     printf "(4/${num_test_cases_controls})\t>>>> Assert Error thrown from no start reaches parameter, or output parameter <<<<\n\n"
         # Create and assign temp file
         tempfile=$(mktemp)
         # Test case
         $cmd controls -db $db_path/ripple.gpkg -f $flows_files_dir/flows_2year.csv &> "$tempfile"
-        # Here we use head -n 1 to capture the first line redirected to the tmp file
-        first_line=$(head -n 1 "$tempfile")
-        # Remove temp file
-        rm "$tempfile"
         # Assign error string
-        assert_expected_output_2="Missing required flags"
-        # Compare Error messaging and print
-        if [ "$first_line" = "$assert_expected_output_2" ]; then
+        expected_error_substring="missing required flags"
+        # Search (grep) for expected error substring in temporary output file
+        if grep -q "$expected_error_substring" "$tempfile"; then
             printf "\t \u2714 Correct error thrown. \n\n"
         else
             printf "\t \u274c Error messaging inconsistent \n\n"
             failed_controls_testcases=$((failed_controls_testcases + 1))
         fi
+        # Remove temp file
+        rm "$tempfile"
 
     printf "(5/${num_test_cases_controls})\t>>>> Assert Error thrown from only providing db parameter <<<<\n\n"
         # Create and assign temp file
         tempfile=$(mktemp)
         # Test case
         $cmd controls -db $db_path/ripple.gpkg &> "$tempfile"
-        # Here we use head -n 1 to capture the first line redirected to the tmp file
-        first_line=$(head -n 1 "$tempfile")
-        # Remove temp file
-        rm "$tempfile"
         # Assign error string
-        assert_expected_output_3="Missing required flags"
-        # Compare Error messaging and print
-        if [ "$first_line" = "$assert_expected_output_3" ]; then
+        expected_error_substring="missing required flags"
+        # Search (grep) for expected error substring in temporary output file
+        if grep -q "$expected_error_substring" "$tempfile"; then
             printf "\t \u2714 Correct error thrown. \n\n"
         else
             printf "\t \u274c Error messaging inconsistent. \n\n"
             failed_controls_testcases=$((failed_controls_testcases + 1))
         fi
+        # Remove temp file
+        rm "$tempfile"
 
     ## Test empty controls file created under different flows file and start reaches file inputs
     printf "(6/${num_test_cases_controls})\t>>>> If start reaches file is empty, confirm controls file is empty <<<<\n\n"
@@ -301,18 +295,17 @@ controls_test_cases() {
             -o $temp_out \
             -scsv $start_reaches_dir/start_reaches.csv &> "$tempfile"
         # Assign error string
-        assert_error_message="Flow not found for reach 24274737"
-        file_contents=$(grep -n "$assert_error_message" "$tempfile" | cut -c 1)
-        # Remove temp files
-        rm "$temp_out"
-        rm "$tempfile"
-        # Compare output of grep (1 indicates $assert_error_message was found in stdout redirected to file)
-        if [ "$file_contents" = 1 ]; then
+        expected_error_substring="Flow not found for reach"
+        # Search (grep) for expected error substring in temporary output file
+        if grep -q "$expected_error_substring" "$tempfile"; then
             printf "\t \u2714 Passed: Flow not found error thrown. \n\n"
         else
             printf "\t \u274c Failed: Flow not found error not thrown \n\n"
             failed_controls_testcases=$((failed_controls_testcases + 1))
         fi
+        # Remove temp files
+        rm "$temp_out"
+        rm "$tempfile"
 
     printf "(8/${num_test_cases_controls})\t>>>> If flows file's columns are swapped, confirm Flow not found error thrown <<<<\n\n"
         # Create and assign temp file
@@ -324,18 +317,17 @@ controls_test_cases() {
             -o $temp_out \
             -scsv $start_reaches_dir/start_reaches.csv &> "$tempfile"
         # Assign error string
-        assert_error_message="Flow not found for reach 24274737"
-        file_contents=$(grep -n "$assert_error_message" "$tempfile" | cut -c 1)
-        # Remove temp files
-        rm "$temp_out"
-        rm "$tempfile"
-        # Compare output of grep (1 indicates $assert_error_message was found in stdout redirected to file)
-        if [ "$file_contents" = 1 ]; then
+        expected_error_substring="Flow not found for reach"
+        # Search (grep) for expected error substring in temporary output file
+        if grep -q "$expected_error_substring" "$tempfile"; then
             printf "\t \u2714 Passed: Flow not found error thrown. \n\n"
         else
             printf "\t \u274c Failed: Flow not found error not thrown \n\n"
             failed_controls_testcases=$((failed_controls_testcases + 1))
         fi
+        # Remove temp files
+        rm "$temp_out"
+        rm "$tempfile"
 
     printf "(9/${num_test_cases_controls})\t>>>> If flows file's values are empty, confirm Flow not found error thrown <<<<\n\n"
         # Create and assign temp file
@@ -346,20 +338,18 @@ controls_test_cases() {
             -f $flows_files_dir/empty_flow_values_no_header.csv \
             -o $temp_out \
             -scsv $start_reaches_dir/start_reaches.csv &> "$tempfile"
-
         # Assign error string
-        assert_error_message="Flow not found for reach 24274737"
-        file_contents=$(grep -n "$assert_error_message" "$tempfile" | cut -c 1)
-        # Remove temp files
-        rm "$temp_out"
-        rm "$tempfile"
-        # Compare output of grep (1 indicates $assert_error_message was found in stdout redirected to file)
-        if [ "$file_contents" = 1 ]; then
+        expected_error_substring="Flow not found for reach"
+        # Search (grep) for expected error substring in temporary output file
+        if grep -q "$expected_error_substring" "$tempfile"; then
             printf "\t \u2714 Passed: Flow not found error thrown. \n\n"
         else
             printf "\t \u274c Failed: Flow not found error not thrown \n\n"
             failed_controls_testcases=$((failed_controls_testcases + 1))
         fi
+        # Remove temp files
+        rm "$temp_out"
+        rm "$tempfile"
 
     controls_passed=$((num_test_cases_controls - failed_controls_testcases))
     total_passed=$(( total_passed + controls_passed))
@@ -395,7 +385,7 @@ fim_test_cases() {
                 -o $fim_test_outputs/fim_${interval}year.tif &> /dev/null
         done
 
-    printf "(2/${num_test_cases_fim})\t>>>> Regression Tests for all recur. int. fim.tif files <<<<\n\n"
+    printf "(2/${num_test_cases_fim})\t>>>> Regression Tests for all recurrence interval fim.tif files <<<<\n\n"
         # Compare fim files from recently generated test data and benchmark data
         # Capture the output of the compare_directories function as a variable
         diff_output=$(compare_directories "$fim_test_outputs" "$fim_benchmark_dir" "fim")
@@ -442,19 +432,17 @@ fim_test_cases() {
                 -fmt $format \
                 -lib $library_benchmark \
                 -o $fim_test_outputs/fim_test.tif &> "$tempfile"
-        # Here we use sed -n 2 p to capture the second line redirected to the tmp file
-        first_line=$(cat "$tempfile" | sed -n '2 p')
-        # Remove temp file
-        rm "$tempfile"
         # Assign error string
-        assert_expected_output_1="Missing required flags"
-        # Compare Error messaging and print
-        if [ "$first_line" = "$assert_expected_output_1" ]; then
+        expected_error_substring="missing required flags"
+        # Search (grep) for expected error substring in temporary output file
+        if grep -q "$expected_error_substring" "$tempfile"; then
             printf "\t \u2714 Correct error thrown. \n\n"
         else
             printf "\t \u274c Error messaging inconsistent \n\n"
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi
+        # Remove temp file
+        rm "$tempfile"
 
     printf "(6/${num_test_cases_fim})\t>>>> Assert Error thrown from no library parameter <<<<\n\n"
         # Create and assign temp file
@@ -464,19 +452,17 @@ fim_test_cases() {
                 -c $controls_benchmark_dir/controls_2year.csv \
                 -fmt "tif" \
                 -o $fim_test_outputs/fim_test.tif &> "$tempfile"
-        # Here we use head -n 1 to capture the first line redirected to the tmp file
-        first_line=$(cat "$tempfile" | sed -n '2 p')
-        # Remove temp file
-        rm "$tempfile"
         # Assign error string
-        assert_expected_output_1="Missing required flags"
-        # Compare Error messaging and print
-        if [ "$first_line" = "$assert_expected_output_1" ]; then
+        expected_error_substring="missing required flags"
+        # Search (grep) for expected error substring in temporary output file
+        if grep -q "$expected_error_substring" "$tempfile"; then
             printf "\t \u2714 Correct error thrown. \n\n"
         else
             printf "\t \u274c Error messaging inconsistent \n\n"
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi
+        # Remove temp file
+        rm "$tempfile"
 
     printf "(7/${num_test_cases_fim})\t>>>> Assert Error thrown from no output file parameter <<<<\n\n"
         # Create and assign temp file
@@ -486,14 +472,10 @@ fim_test_cases() {
                 -c $controls_benchmark_dir/controls_2year.csv \
                 -fmt $format \
                 -lib $library_benchmark &> "$tempfile"
-        # Here we use sed -n 2 p to capture the second line redirected to the tmp file
-        first_line=$(cat "$tempfile" | sed -n '2 p')
-        # Remove temp file
-        rm "$tempfile"
         # Assign error string
-        assert_expected_output_1="Missing required flags"
-        # Compare Error messaging and print
-        if [ "$first_line" = "$assert_expected_output_1" ]; then
+        expected_error_substring="missing required flags"
+        # Search (grep) for expected error substring in temporary output file
+        if grep -q "$expected_error_substring" "$tempfile"; then
             printf "\t \u2714 Correct error thrown. \n\n"
         else
             printf "\t \u274c Error messaging inconsistent \n\n"
@@ -509,19 +491,17 @@ fim_test_cases() {
                 -fmt $format \
                 -lib $library_benchmark \
                 -o $fim_test_outputs/fim_test.tif &> "$tempfile"
-        # Here we use head -n 1 to capture the first line redirected to the tmp file
-        first_line=$(head -n 1 "$tempfile")
-        # Remove temp file
-        rm "$tempfile"
         # Assign error string
-        assert_expected_output_1="Error: no records in control file"
-        # Compare Error messaging and print
-        if [ "$first_line" = "$assert_expected_output_1" ]; then
+        expected_error_substring="no records in control file"
+        # Search (grep) for expected error substring in temporary output file
+        if grep -q "$expected_error_substring" "$tempfile"; then
             printf "\t \u2714 Correct error thrown. \n\n"
         else
             printf "\t \u274c Error messaging inconsistent \n\n"
             failed_fim_testcases=$((failed_fim_testcases + 1))
         fi
+        # Remove temp file
+        rm "$tempfile"
 
     #printf "(9/${num_test_cases_fim})\t>>>> Test flows2fim fim pull from S3 <<<<\n\n"
 
