@@ -16,7 +16,7 @@ The following advanced commands are available but are not commonly needed:
  - `validate`: Given a FIM library folder and a rating curves database, validate there is one-to-one correspondence between the entries of the rating curves table and FIM library objects.
 
 ### Dependencies:
- - `GDAL` must be installed and available in PATH
+ - `GDAL` must be installed and available in PATH. Must be version 3.8 or greater (although if only working with depth libraries, 3.4 should be sufficient)
 
 ### Units:
 Current support is for English units. The flow values must be in `cfs`
@@ -31,7 +31,7 @@ Current support is for English units. The flow values must be in `cfs`
 
 1. To create a control file from the 100yr flows file run `flows2fim controls -db "Baxter/ripple.gpkg" -f "Baxter/flows/flows_100yr_cfs.csv" -o "Baxter/controls_100yr.csv" -sids 2821866`
 
-1. To create Depth VRT run `flows2fim fim -lib "Baxter/library" -c "Baxter/controls_100yr.csv" -o "Baxter/fim_100yr.vrt"`
+1. To create Depth VRT run `flows2fim fim -lib "Baxter/library" -type depth -c "Baxter/controls_100yr.csv" -o "Baxter/fim_100yr.vrt"`
 
 ## Quick Start For Developers
 
@@ -43,7 +43,7 @@ Current support is for English units. The flow values must be in `cfs`
 
 3. Run `go run main.go controls -db "testdata/Baxter/ripple.gpkg" -f "testdata/Baxter/flows/flows_100yr_cfs.csv" -o "testdata/Baxter/controls_100yr.csv" -sids 2821866` This will create a controls.csv file
 
-4. Run `go run main.go fim -lib "testdata/Baxter/library" -c "testdata/Baxter/controls_100yr.csv" -o "testdata/Baxter/fim_100yr.vrt"` This will create a VRT file. VRT can be tested by loading in QGIS.
+4. Run `go run main.go fim -lib "testdata/Baxter/library" -type depth -c "testdata/Baxter/controls_100yr.csv" -o "testdata/Baxter/fim_100yr.vrt"` This will create a VRT file. VRT can be tested by loading in QGIS.
 
 #### Testing
 

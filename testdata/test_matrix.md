@@ -16,10 +16,12 @@
 |                                                 |                      |                      |                   |
 | **fim**                                         |                      |                      |                   |
 | Generate 2,5,10,25,50,100 yr fim.tif files      | &#9745;              | &#9745;              |                   |
-| Generate fim files in different output formats  | &#9745;              | &#9745;              |                   |
+| Generate depth fims in different output formats | &#9745;              | &#9745;              |                   |
+| Generate extent fims in different output formats|                      |                      |                   |
 | missing `-c`                                    |                      |                      | &#9745;           |
 | missing `-l`                                    |                      |                      | &#9745;           |
 | missing `-o`                                    |                      |                      | &#9745;           |
+| missing `-type`                                 |                      |                      |                   |
 | empty `-c` file                                 |                      |                      | &#9745;           |
 |                                                 |                      |                      |                   |
 | **validate**                                    |                      |                      |                   |

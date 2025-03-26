@@ -382,6 +382,7 @@ fim_test_cases() {
                 -c $controls_benchmark_dir/controls_${interval}year.csv \
                 -fmt $fim_file_format \
                 -lib $library_benchmark \
+                -type depth \
                 -o $fim_test_outputs/fim_${interval}year.tif &> /dev/null
         done
 
@@ -409,6 +410,7 @@ fim_test_cases() {
                 -c $controls_benchmark_dir/controls_2year.csv \
                 -fmt $format \
                 -lib $library_benchmark \
+                -type depth \
                 -o $fim_test_output_formats/$output_file &> /dev/null
         done
 
@@ -431,6 +433,7 @@ fim_test_cases() {
         $cmd fim \
                 -fmt $format \
                 -lib $library_benchmark \
+                -type depth \
                 -o $fim_test_outputs/fim_test.tif &> "$tempfile"
         # Assign error string
         expected_error_substring="missing required flags"
@@ -451,6 +454,7 @@ fim_test_cases() {
         $cmd fim \
                 -c $controls_benchmark_dir/controls_2year.csv \
                 -fmt "tif" \
+                -type depth \
                 -o $fim_test_outputs/fim_test.tif &> "$tempfile"
         # Assign error string
         expected_error_substring="missing required flags"
@@ -471,6 +475,7 @@ fim_test_cases() {
         $cmd fim \
                 -c $controls_benchmark_dir/controls_2year.csv \
                 -fmt $format \
+                -type depth \
                 -lib $library_benchmark &> "$tempfile"
         # Assign error string
         expected_error_substring="missing required flags"
@@ -490,6 +495,7 @@ fim_test_cases() {
                 -c $flows_files_dir/empty_file.csv \
                 -fmt $format \
                 -lib $library_benchmark \
+                -type depth \
                 -o $fim_test_outputs/fim_test.tif &> "$tempfile"
         # Assign error string
         expected_error_substring="no records in control file"
