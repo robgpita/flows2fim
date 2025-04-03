@@ -1,4 +1,5 @@
-FROM ghcr.io/osgeo/gdal:ubuntu-small-3.8.5
+# Development stage - full environment for active development
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.8.5 AS dev
 
 # Install Go 1.24.1
 RUN apt-get update && \
@@ -17,10 +18,6 @@ ENV GOPATH=/go
 
 # Set working directory and copy Go mod files
 WORKDIR /app
-COPY go.mod go.sum ./
-
-# Download and cache dependencies (assumes go.mod and go.sum are tidy)
-RUN go mod download
 
 # zip needed for creating release-assets
 # git needed for version and tag information
@@ -35,3 +32,24 @@ RUN cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /bin && \
 
 # Set git safe directory
 RUN git config --global --add safe.directory /app
+
+# Builder stage - optimized for binary compilation
+FROM dev AS builder
+
+# Copy source code and build
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$(dpkg --print-architecture) go build -buildvcs=false \
+    -ldflags="-X main.GitTag=$(git describe --tags --always --dirty) -X main.GitCommit=$(git rev-parse --short HEAD) -X main.BuildDate=$(date +%Y-%m-%d)" \
+    -o /flows2fim main.go
+
+# Production stage - minimal runtime
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.8.5 AS prod
+
+# Copy GDAL utility script
+RUN cp /usr/lib/python3/dist-packages/osgeo_utils/samples/gdal_ls.py /bin && \
+    chmod +x /bin/gdal_ls.py
+
+# Copy compiled binary from builder
+COPY --from=builder /flows2fim /bin/
+
+ENTRYPOINT ["flows2fim"]

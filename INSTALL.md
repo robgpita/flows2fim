@@ -2,7 +2,12 @@
 
 
 ## Docker
-Coming soon
+1. **Build Docker Image**
+   - cd into root of repository
+   - Build container `docker build -t flows2fim:latest --target prod .`
+
+2. **Verify**
+    - Run `docker run --rm -it flows2fim:latest --version` to confirm everything works.
 
 ## Windows
 
@@ -32,7 +37,7 @@ Coming soon
 
 1. **Install GDAL (=>3.8)**
 
-   There are various ways to install GDAL. See GDAL documentation for more details.
+   There are various ways to install GDAL. See GDAL documentation for more details. If you are struggling with GDAL installation, consider using Docker.
 
 2. **Setup flows2fim**
     - **Option 1. - Download**
