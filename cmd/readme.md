@@ -8,4 +8,3 @@ The `cmd` directory contains the main application entry points. Each subdirector
 - **Naming Conventions**: Name each subdirectory after the command it represents, ensuring clarity and readability.
 
 ## Usage
-The structure allows for clear separation of different executables in a project, facilitating scalability and organization.

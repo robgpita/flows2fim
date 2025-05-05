@@ -11,7 +11,7 @@
 
 ## Windows
 
-1. **Install GDAL (=> 3.8)**
+1. **Install GDAL**
    - The easiest way is via [**OSGeo4W**](https://trac.osgeo.org/osgeo4w/#QuickStartforOSGeo4WUsers)
 
 2. **Setup flows2fim**
@@ -35,7 +35,12 @@
 
 ## Linux
 
-1. **Install GDAL (=>3.8)**
+1. **Install GDAL**
+
+    _For Debian based distros:_
+   ```bash
+   sudo apt-get update && sudo apt-get install -y gdal-bin
+   ```
 
    There are various ways to install GDAL. See GDAL documentation for more details. If you are struggling with GDAL installation, consider using Docker.
 

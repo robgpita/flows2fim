@@ -11,12 +11,13 @@ It has the following basic commands:
 
  - `controls`: Given a flow file and a rating curves database, create a control table of reach flows and downstream boundary conditions.
  - `fim`: Given a control table and a fim library folder. Create a flood inundation map for the control conditions.
+ - `domain`: Given a reach_id list (or a control table) and a fim library folder, create a composite domain map for the given reaches.
 
 The following advanced commands are available but are not commonly needed:
  - `validate`: Given a FIM library folder and a rating curves database, validate there is one-to-one correspondence between the entries of the rating curves table and FIM library objects.
 
 ### Dependencies:
- - `GDAL` must be installed and available in PATH. Must be version 3.8 or greater (although if only working with depth libraries, 3.4 should be sufficient)
+ - `GDAL` must be installed and available in PATH.
 
 ### Units:
 Current support is for English units. The flow values must be in `cfs`

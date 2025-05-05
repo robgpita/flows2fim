@@ -23,6 +23,7 @@
 | missing `-o`                                    |                      |                      | &#9745;           |
 | missing `-type`                                 |                      |                      |                   |
 | empty `-c` file                                 |                      |                      | &#9745;           |
+| -with_domain                                    |                      |                      |                   |
 |                                                 |                      |                      |                   |
 | **validate**                                    |                      |                      |                   |
 |                                                 |                      |                      |                   |

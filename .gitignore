@@ -36,8 +36,11 @@ go.work
 *.gpkg
 
 # Test data
-!testdata/test_out/
+testdata/*
+!testdata/reference_data/
+!testdata/readme.md
+!testdata/test_matrix.md
 
 # Temp Files
-*.gpkg-wal 
+*.gpkg-wal
 *.gpkg-shm

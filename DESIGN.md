@@ -14,7 +14,8 @@
 1. GDAL will always use relative paths if output and inputs are in same lineage, this was the reason for removing -rel flag
 1. gdalbuildvrt don't support cloud relative paths. This does not work `gdalbuildvrt /vsis3/fimc-data/fim2d/prototype/2024_03_13/vsi_relative.vrt ./8489318/z0_0/f_1560.tif ./8490370/z0_0/f_130.tif`
 1. To simplify fim.go, all paths are converted to absolute paths and the relative logic is left to `gdalbuildvrt`
-1. We looked into `gdal_merge`, `gdalwarp`, `gdalbuildvrt`. None of them have a way to merge rasters with maximum value of each pixel. The only possible option out there is pixel function with VRT, which we are using. It is extremely slow when converting from VRT to TIF, so we decided to only use pixel function with extent library where it is a must. It is even slower to convert from VRT to COG, so we are first converting to TIF and then to COG.
+1. We looked into `gdal_merge`, `gdalwarp`, `gdalbuildvrt`. None of them have a way to merge rasters with maximum value of each pixel. The only possible option out there is pixel function with VRT, which was used in v0.3.0 for depth library type. It was extremely slow because https://gis.stackexchange.com/a/491960/142232. Hence in 0.4.0, the FIM library is modified to store FIMs and domains separetely, this would eliminate the need of pixel by pixel calculations completely, turmendoulsy improving speed. This is also a better design because domains are not always needed anyways and were an unnecessary burden in NRT executions.
+
 
 ### Validate
 1. A  `-o_<type>` convention is used to allow for multiple outputs across subcommands.
