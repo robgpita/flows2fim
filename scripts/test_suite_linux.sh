@@ -375,7 +375,7 @@ fim_test_cases() {
     local recurrence_interval=(2 5 10 25 50 100)
     printf "(1/${num_test_cases_fim})\t>>>> Generate fim_year.tif files from "
     printf "${recurrence_interval[*]} year recurrence interval data for Regression Testing. <<<<\n\n"
-        local fim_file_format="tif"
+        local fim_file_format="GTiff"
         for interval in "${recurrence_interval[@]}"; do
             # Execute $cmd with each recurrence interval
             $cmd fim \
@@ -401,7 +401,7 @@ fim_test_cases() {
         fi
 
     printf "(3/${num_test_cases_fim})\t>>>> Generate fim files in different output formats <<<<\n\n"
-        local file_formats=( "tif" "cog" "vrt" )
+        local file_formats=( "GTiff" "cog" "vrt" )
 
         for format in "${file_formats[@]}"; do
             local output_file=fim_2year.$format
@@ -453,7 +453,7 @@ fim_test_cases() {
         # Test case
         $cmd fim \
                 -c $controls_benchmark_dir/controls_2year.csv \
-                -fmt "tif" \
+                -fmt "GTiff" \
                 -type depth \
                 -o $fim_test_outputs/fim_test.tif &> "$tempfile"
         # Assign error string
