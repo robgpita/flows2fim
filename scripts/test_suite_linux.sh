@@ -401,7 +401,7 @@ fim_test_cases() {
         fi
 
     printf "(3/${num_test_cases_fim})\t>>>> Generate fim files in different output formats <<<<\n\n"
-        local file_formats=( "GTiff" "cog" "vrt" )
+        local file_formats=( "gtiff" "cog" "vrt" )
 
         for format in "${file_formats[@]}"; do
             local output_file=fim_2year.$format
