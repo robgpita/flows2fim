@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"flows2fim/cmd/controls"
+	"flows2fim/cmd/domain"
 	"flows2fim/cmd/fim"
 	"flows2fim/cmd/validate"
 	"flows2fim/internal/config"
@@ -23,6 +24,7 @@ var usage string = `Usage of flows2fim:
 Available Commands:
   - controls: Given a flow file and a rating curves database, create a control table of reach flows and downstream boundary conditions.
   - fim: Given a control table and a fim library folder, create a flood inundation map for the control conditions.
+  - domain: Given a reach_id list (or a control table) and a fim library folder, create a composite domain map for the given reaches.
   - validate: Given a fim library folder and a rating curves database, validate there is one to one correspondence between the entries of rating curves table and fim library objects.
 
 Dependencies:
@@ -50,7 +52,7 @@ var (
 func run(args []string) (err error) {
 
 	if len(args) < 2 {
-		return fmt.Errorf("missing command. See flows2fim --help for available commands")
+		return fmt.Errorf("missing command. See 'flows2fim --help' for available commands")
 	}
 
 	switch args[1] {
@@ -65,10 +67,12 @@ func run(args []string) (err error) {
 		err = controls.Run(args[2:])
 	case "fim":
 		_, err = fim.Run(args[2:])
+	case "domain":
+		_, err = domain.Run(args[2:])
 	case "validate":
 		err = validate.Run(args[2:])
 	default:
-		err = fmt.Errorf("unknown command %s see flows2fim --help for available commands", args[1])
+		err = fmt.Errorf("unknown command '%s' see 'flows2fim --help' for available commands", args[1])
 	}
 
 	return err

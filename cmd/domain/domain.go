@@ -1,4 +1,4 @@
-package fim
+package domain
 
 import (
 	"encoding/csv"
@@ -12,8 +12,8 @@ import (
 	"strings"
 )
 
-var usage string = `Usage of fim:
-Given a control table and a fim library folder, create a composite flood inundation map for the control conditions.
+var usage string = `Usage of domain:
+Given a reach_id list (or a control table) and a fim library folder, create a composite domain map for the given reaches.
 GDAL VSI paths can be used (only for library and not for output), given GDAL must have access to cloud creds.
 
 FIM Library Specifications:
@@ -48,16 +48,13 @@ func Run(args []string) (gdalArgs []string, err error) {
 		flags.PrintDefaults()
 	}
 
-	var controlsFile, fimLibDir, libType, outputFormat, outputFile string
-	var withDomain bool
+	var reachesFile, fimLibDir, outputFormat, outputFile string
 
 	// Define flags using flags.StringVar
 	flags.StringVar(&fimLibDir, "lib", "", "Directory containing FIM Library. GDAL VSI paths can be used, given GDAL must have access to cloud creds")
-	flags.StringVar(&controlsFile, "c", "", "Path to the controls CSV file")
+	flags.StringVar(&reachesFile, "r", "", "Path to the reaches list CSV file (control file can also be used as long as first column is reach_id)")
 	flags.StringVar(&outputFormat, "fmt", "VRT", "Output format: 'VRT', 'COG' or 'GTIFF'") // follows GDAL format names, case insensitive
-	flags.StringVar(&libType, "type", "", "Library type: 'depth' or 'extent'")             // was only required for v0.3.0, but keeping it for backward compatibility
-	flags.StringVar(&outputFile, "o", "", "Output FIM file path")
-	flags.BoolVar(&withDomain, "with_domain", false, "If true, domain is added behind FIMs")
+	flags.StringVar(&outputFile, "o", "", "Output domain file path")
 
 	// Parse flags from the arguments
 	if err := flags.Parse(args); err != nil {
@@ -67,8 +64,8 @@ func Run(args []string) (gdalArgs []string, err error) {
 	outputFormat = strings.ToUpper(outputFormat) // COG, cog, VRT, vrt all okay
 
 	// Validate required flags
-	if controlsFile == "" || fimLibDir == "" || outputFile == "" {
-		fmt.Println(controlsFile, fimLibDir, outputFile)
+	if reachesFile == "" || fimLibDir == "" || outputFile == "" {
+		fmt.Println(reachesFile, fimLibDir, outputFile)
 		fmt.Println("Missing required flags")
 		flags.PrintDefaults()
 		return []string{}, fmt.Errorf("missing required flags")
@@ -107,9 +104,9 @@ func Run(args []string) (gdalArgs []string, err error) {
 	}
 
 	// Processing CSV
-	file, err := os.Open(controlsFile)
+	file, err := os.Open(reachesFile)
 	if err != nil {
-		return []string{}, fmt.Errorf("error opening controls file: %v", err)
+		return []string{}, fmt.Errorf("error opening reaches file: %v", err)
 	}
 	defer file.Close()
 
@@ -120,33 +117,28 @@ func Run(args []string) (gdalArgs []string, err error) {
 	}
 
 	if len(records) < 2 {
-		return []string{}, fmt.Errorf("no records in control file")
+		return []string{}, fmt.Errorf("no records in reaches file")
 	}
 
-	var domainFiles, fimFiles []string
+	if records[0][0] != "reach_id" {
+		return []string{}, fmt.Errorf("first column of reaches file should be reach_id")
+	}
+
+	var domainFiles []string
 	for _, record := range records[1:] { // Skip header row
 		reachID := record[0]
 
-		record[2] = strings.Replace(record[2], ".", "_", -1) // Replace '.' with '_'
-		folderPath := filepath.Join(absFimLibPath, reachID, fmt.Sprintf("z_%s", record[2]))
-		fileName := fmt.Sprintf("f_%s.tif", record[1])
-		absFIMPath := filepath.Join(folderPath, fileName)
 		absDomainPath := filepath.Join(absFimLibPath, reachID, "domain.tif")
 
 		// join on windows may cause \vsi
-		if strings.HasPrefix(absFIMPath, `\vsi`) {
+		if strings.HasPrefix(absDomainPath, `\vsi`) {
 			absDomainPath = strings.ReplaceAll(absDomainPath, `\`, "/")
-			absFIMPath = strings.ReplaceAll(absFIMPath, `\`, "/")
 		}
-
-		fimFiles = append(fimFiles, absFIMPath)
-		if withDomain {
-			domainFiles = append(domainFiles, absDomainPath)
-		}
+		domainFiles = append(domainFiles, absDomainPath)
 	}
 
 	// Write file paths to a temporary file
-	inputFileListPath, err := utils.WriteListToTempFile(append(domainFiles, fimFiles...))
+	inputFileListPath, err := utils.WriteListToTempFile(domainFiles)
 	if err != nil {
 		return []string{}, fmt.Errorf("error writing file list to temporary file: %v", err)
 	}
@@ -193,7 +185,7 @@ func Run(args []string) (gdalArgs []string, err error) {
 
 	}
 
-	fmt.Printf("Composite FIM created at %s\n", absOutputPath)
+	fmt.Printf("Composite domain created at %s\n", absOutputPath)
 
 	return gdalArgs, nil
 }

@@ -8,4 +8,3 @@ The `pkg` directory holds reusable packages that can be used by other applicatio
 - **General Purpose**: Code in `pkg` should be generic and reusable, not application-specific.
 
 ## Usage
-This structure promotes code reuse and modularity, allowing other projects to easily import and use the code within `pkg`.
