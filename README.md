@@ -1,6 +1,8 @@
 # `flows2fim`
 
-[![Build and Test - Linux](https://github.com/ar-siddiqui/flows2fim/actions/workflows/build_and_test_linux.yml/badge.svg?event=push)](https://github.com/ar-siddiqui/flows2fim/actions/workflows/build_and_test_linux.yml)
+[![Build and Test - Linux](https://github.com/NGWPC/flows2fim/actions/workflows/build_and_test_linux.yml/badge.svg?event=push)](https://github.com/NGWPC/flows2fim/actions/workflows/build_and_test_linux.yml)
+
+[![Build and Test - Mac](https://github.com/NGWPC/flows2fim/actions/workflows/build_and_test_mac.yml/badge.svg?event=push)](https://github.com/NGWPC/flows2fim/actions/workflows/build_and_test_mac.yml)
 
 ![alt text](image.png)
 ## Overview
