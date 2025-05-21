@@ -18,7 +18,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        brew install colima docker docker-compose
+        brew install docker docker-compose
         
         # Link the Docker Compose v2 plugin so it's understood by the docker CLI
         mkdir -p ~/.docker/cli-plugins
@@ -26,7 +26,7 @@ jobs:
     
     - name: Start Colima
       run: |
-        colima start --mount-type 9p
+        colima start --mount-type 9p --cpu 2 --memory 4 --disk 2
 
     - name: Run Docker Compose
       run: |
