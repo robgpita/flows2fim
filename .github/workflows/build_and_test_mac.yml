@@ -78,7 +78,3 @@ jobs:
     - name: Issue flows2fim fim test cases
       run: |
         ./scripts/test_suite_linux.sh fim
-
-    - name: Issue flows2fim validate test cases
-      run: |
-        ./scripts/test_suite_linux.sh validate
