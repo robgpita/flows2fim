@@ -16,12 +16,16 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up Docker Compose
-      uses: docker/setup-buildx-action@v3
+    - name: Install dependencies
+      run: |
+        brew install colima docker docker-compose
+    - name: Start Colima
+      run: |
+        colima start --cpu 2 --memory 4 --disk 20
 
     - name: Run Docker Compose
       run: |
-        docker compose up -d
+        docker-compose up -d
         docker ps
 
     - name: Attach to running container and Build
