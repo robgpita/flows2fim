@@ -73,8 +73,8 @@ jobs:
 
     - name: Issue flows2fim controls test cases
       run: |
-        ./scripts/test_suite_linux.sh controls
+        ./scripts/test_suite_mac.sh controls
 
     - name: Issue flows2fim fim test cases
       run: |
-        ./scripts/test_suite_linux.sh fim
+        ./scripts/test_suite_mac.sh fim
