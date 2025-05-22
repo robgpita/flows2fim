@@ -2,7 +2,7 @@ name: Build and Test - MacOS
 
 on:
   push:
-    branches: [main, dev-mac-install]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
