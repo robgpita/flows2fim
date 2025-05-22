@@ -56,7 +56,3 @@ Run `./scripts/build-linux-amd64.sh` This will place the executable in `builds/l
 
 ## Installation
 [Installation](INSTALL.md)
-
-## Examples
-[Examples](EXAMPLES.md)
-
