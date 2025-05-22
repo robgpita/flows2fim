@@ -15,7 +15,7 @@
    - The easiest way is via [**OSGeo4W**](https://trac.osgeo.org/osgeo4w/#QuickStartforOSGeo4WUsers)
 
 2. **Setup flows2fim**
-    - Go to the [**Releases**](https://github.com/ar-siddiqui/flows2fim/releases) page and download the `flows2fim-windows-amd64.zip`
+    - Go to the [**Releases**](https://github.com/NGWPC/flows2fim/releases) page and download the `flows2fim-windows-amd64.zip`
     - Unzip and copy `flows2fim.exe` into `C:\OSGeo4W\bin`
 
 3. **(Optional) Enable `gdal_ls`**
@@ -45,15 +45,15 @@
    There are various ways to install GDAL. See GDAL documentation for more details. If you are struggling with GDAL installation, consider using Docker.
 
 2. **Setup flows2fim**
-    - **Option 1. - Download**
-        - Go to the [**Releases**](https://github.com/ar-siddiqui/flows2fim/releases) page and download the `flows2fim-linux-amd64.tar.gz`
-        - Extract it and move to a directory in PATH (e.g., `/usr/local/bin`) and make it executable:
+    - **Option 1 - Download**
+        - Go to the [**Releases**](https://github.com/NGWPC/flows2fim/releases) page and download the `flows2fim-linux-amd64.tar.gz`
+        - Extract it and move to a directory in `$PATH` (e.g., `/usr/local/bin`) and make it executable:
             ```bash
             tar -xvf flows2fim-linux-amd64.tar.gz
             sudo mv flows2fim /usr/local/bin/
             sudo chmod +x /usr/local/bin/flows2fim
             ```
-    - **Option 2. - Build from source**
+    - **Option 2 - Build from source**
         - cd into root of repository
         - Build container
             - `docker compose up -d`
@@ -63,7 +63,7 @@
             - `docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-linux-amd64.sh"`
         - Shutdown container
             - `docker compose down`
-        - Move executable to $PATH
+        - Move executable to `$PATH`
             - `sudo mv builds/linux-amd64/flows2fim /usr/local/bin/`
             - `sudo chmod +x /usr/local/bin/flows2fim`
 3. **(Optional) Enable `gdal_ls`**
@@ -78,3 +78,66 @@
     - Run `flows2fim --version` to confirm everything works.
     - Run `gdalinfo --version` to confirm everything works.
     - (Optional) Run `gdal_ls.py --version` if you set it up.
+
+## Mac
+
+1. **Install GDAL**
+
+    The easiest way to install GDAL on a Mac is through homebrew.
+    If [homebrew](https://brew.sh/) is not on your Mac, install it:
+    ```bash
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    ```
+    Verify homebrew installation:
+    ```bash
+        brew --version
+    ```
+    Install GDAL:
+    ```
+        brew install gdal
+    ```
+    Verify:
+    ```
+        gdalinfo --version
+    ```
+
+   There are various ways to install GDAL. See GDAL documentation for more details. If you are struggling with GDAL installation, consider using Docker.
+
+2. **Setup flows2fim**
+    - **Option 1 - Download**
+        - Go to the [**Releases**](https://github.com/NGWPC/flows2fim/releases) page and download (double click) `flows2fim-darwin-arm64.tar.gz`
+        - Open the Mac Finder application and navigate to your `Downloads` folder.
+        - Right click > Open the `flows2fim-darwin-arm64.tar.gz` file. This *should* avoid errors arising from Apple security settings.
+        - In a terminal window, move the flows2fim executable to a directory in your `$PATH` (e.g., `/usr/local/bin`), and add execute permissions:
+            ```bash
+            cd ~/Downloads
+            sudo mv flows2fim /usr/local/bin/
+            sudo chmod a+x /usr/local/bin/flows2fim
+            ```
+        - Verify `flows2fim` is executable and in your `$PATH`.
+            ```bash
+            flows2fim --version
+            ```
+        - If the error `"flows2fim" can't be opened because Apple cannot check it for malicious software.` or similar comes up, you may temporarily override your Mac's security settings with the following command:
+            ```bash
+            xattr -d com.apple.quarantine /usr/local/bin/flows2fim
+            ```
+        
+    - **Option 2 - Build from source**
+        - cd into root of repository
+        - Build container
+            - `docker compose up -d`
+        - Get flows2fim CONTAINER_ID
+            - `CONTAINER_ID=$(docker ps -q | head -n 1)`
+        - Issue build script
+            - `docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-darwin-arm64.sh"`
+        - Shutdown container
+            - `docker compose down`
+        - Move executable to `$PATH`
+            - `sudo mv builds/darwin-arm64/flows2fim /usr/local/bin/`
+            - `sudo chmod a+x /usr/local/bin/flows2fim`
+
+3. **`gdal_ls` not supported on MacOS currently (gdal_ls is not included in gdal homebrew installation)**
+
+4. **Verify**
+    - Run `flows2fim --version` to confirm everything works.
