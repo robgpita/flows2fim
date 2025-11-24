@@ -1,0 +1,122 @@
+name: Build and Test - Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build flows2fim (Windows binary)
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Compose
+      uses: docker/setup-buildx-action@v3
+
+    - name: Run Docker Compose
+      run: |
+        docker compose up -d
+        docker ps
+
+    - name: Attach to running container and Build Windows executable
+      run: |
+        CONTAINER_ID=$(docker ps -q | head -n 1)
+        if [ -n "$CONTAINER_ID" ]; then
+          docker exec $CONTAINER_ID /bin/bash -c "./scripts/build-windows-amd64.sh"
+          docker compose down
+        else
+          echo "No running containers found"
+          exit 1
+        fi
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: flows2fim
+        path: builds/windows-amd64
+
+  test:
+    name: Test flows2fim on Windows
+    runs-on: windows-latest
+    needs: build
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: flows2fim
+        path: builds/windows-amd64
+
+    - name: Add flows2fim to PATH and verify binary
+      shell: powershell
+      run: |
+        Write-Host "Listing artifact contents"
+        Get-ChildItem -Recurse builds\windows-amd64
+        Write-Host "Invoke version"
+        .\builds\windows-amd64\flows2fim.exe --version
+        Add-Content -Path $env:GITHUB_PATH -Value "builds/windows-amd64"
+
+    - name: Install & Configure GDAL
+      shell: powershell
+      run: |
+        choco install gdal -y
+        # refresh environment variables (may be available via refreshenv)
+        if (Get-Command refreshenv -ErrorAction SilentlyContinue) { refreshenv } 
+        gdalinfo --version
+
+    - name: Install Python GDAL utilities
+      shell: powershell
+      run: |
+        Write-Host "Ensure pip and install GDAL Python helpers"
+        python -m pip install --upgrade pip setuptools wheel
+        # Try installing osgeo-utils first (provides osgeo_utils.gdalcompare), fall back to gdal
+        python -m pip install osgeo-utils || python -m pip install gdal || python -m pip install osgeo
+        # Print scripts path and verify gdalcompare availability via module or script
+        $pyScriptsPath = & python -c "import sysconfig,sys; print(sysconfig.get_path('scripts'))" 2>$null
+        $scriptsPath = $pyScriptsPath.Trim()
+        Write-Host "Python scripts path: $scriptsPath"
+        # Add Python scripts path to runner PATH so installed scripts are discoverable
+        if (Test-Path -Path $scriptsPath) {
+          Write-Host "Adding Python scripts path to PATH"
+          Add-Content -Path $env:GITHUB_PATH -Value $scriptsPath
+        } else {
+          Write-Host "Python scripts path not found: $scriptsPath"
+        }
+        Write-Host "Check gdalcompare availability (module invocation)"
+        python -m osgeo_utils.gdalcompare --help 2>$null || Write-Host "osgeo_utils.gdalcompare not available via module"
+        # If gdalcompare.py is on PATH, show its location
+        if (Get-Command gdalcompare.py -ErrorAction SilentlyContinue) {
+          Write-Host "Found gdalcompare.py at: $(Get-Command gdalcompare.py).Source"
+        } else {
+          Write-Host "gdalcompare.py not found on PATH"
+        }
+
+    - name: Verify gdal installation
+      shell: powershell
+      run: |
+        gdalinfo --version
+        Write-Host "gdalinfo available: $(Get-Command gdalinfo -ErrorAction SilentlyContinue)"
+
+    - name: Issue flows2fim controls test cases
+      run: |
+        ./scripts/test_suite_windows.sh controls
+      shell: bash
+
+    - name: Issue flows2fim fim test cases
+      run: |
+        ./scripts/test_suite_windows.sh fim
+      shell: bash
+
+    - name: Issue flows2fim validate test cases
+      run: |
+        ./scripts/test_suite_windows.sh validate
+      shell: bash
