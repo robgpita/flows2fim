@@ -2,7 +2,7 @@ name: Build and Test - Windows
 
 on:
   push:
-    branches: [main]
+    branches: [main, add_windows_workflow]
   pull_request:
   workflow_dispatch:
 
