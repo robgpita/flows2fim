@@ -261,7 +261,10 @@ compare_directories() {
 controls_test_cases() {
     # Test 1: Generate and compare 6 controls files (2, 5, 10, 25, 50, 100 year)
     # Test 2: Empty start reaches should produce header-only output
-    local num_test_cases_controls=2
+    # Test 3: Empty flows file should throw "Flow not found" error
+    # Test 4: Swapped columns in flows file should throw "Flow not found" error
+    # Test 5: Empty flow values should throw "Flow not found" error
+    local num_test_cases_controls=5
     local failed_controls_testcases=0
     total_count=$(( total_count + num_test_cases_controls ))
 
@@ -306,13 +309,71 @@ controls_test_cases() {
         failed_controls_testcases=$((failed_controls_testcases + 1))
     fi
 
+    # Test 3: Empty flows file should throw "Flow not found" error
+    echo "Test 3: Checking empty flows file error handling..."
+    tempfile=$(mktemp)
+    temp_out=$(mktemp)
+    $CMD_EXEC controls -db "$db_path/ripple.gpkg" \
+        -f "$flows_files_dir/empty_file.csv" \
+        -o "$temp_out" \
+        -scsv "$start_reaches_dir/start_reaches.csv" &> "$tempfile" || true
+    if grep -q "Flow not found for reach" "$tempfile"; then
+        echo "Test 3 PASSED: Flow not found error thrown for empty file"
+    else
+        echo "Test 3 FAILED: Flow not found error not thrown for empty file"
+        cat "$tempfile"
+        failed_controls_testcases=$((failed_controls_testcases + 1))
+    fi
+    rm -f "$temp_out" "$tempfile"
+
+    # Test 4: Swapped columns in flows file should throw "Flow not found" error
+    echo "Test 4: Checking swapped columns error handling..."
+    tempfile=$(mktemp)
+    temp_out=$(mktemp)
+    $CMD_EXEC controls -db "$db_path/ripple.gpkg" \
+        -f "$flows_files_dir/flows_2year_swapped.csv" \
+        -o "$temp_out" \
+        -scsv "$start_reaches_dir/start_reaches.csv" &> "$tempfile" || true
+    if grep -q "Flow not found for reach" "$tempfile"; then
+        echo "Test 4 PASSED: Flow not found error thrown for swapped columns"
+    else
+        echo "Test 4 FAILED: Flow not found error not thrown for swapped columns"
+        cat "$tempfile"
+        failed_controls_testcases=$((failed_controls_testcases + 1))
+    fi
+    rm -f "$temp_out" "$tempfile"
+
+    # Test 5: Empty flow values should throw "Flow not found" error
+    echo "Test 5: Checking empty flow values error handling..."
+    tempfile=$(mktemp)
+    temp_out=$(mktemp)
+    $CMD_EXEC controls -db "$db_path/ripple.gpkg" \
+        -f "$flows_files_dir/flows_2year_empty_values.csv" \
+        -o "$temp_out" \
+        -scsv "$start_reaches_dir/start_reaches.csv" &> "$tempfile" || true
+    if grep -q "Flow not found for reach" "$tempfile"; then
+        echo "Test 5 PASSED: Flow not found error thrown for empty flow values"
+    else
+        echo "Test 5 FAILED: Flow not found error not thrown for empty flow values"
+        cat "$tempfile"
+        failed_controls_testcases=$((failed_controls_testcases + 1))
+    fi
+    rm -f "$temp_out" "$tempfile"
+
     controls_passed=$(( num_test_cases_controls - failed_controls_testcases ))
     total_passed=$(( total_passed + controls_passed ))
 }
 
 fim_test_cases() {
-    # Test 1: Generate and compare 6 FIM raster files (2, 5, 10, 25, 50, 100 year)
-    local num_test_cases_fim=1
+    # Test 1: Generate fim files for 6 recurrence intervals (2, 5, 10, 25, 50, 100 year)
+    # Test 2: Regression test comparing generated files
+    # Test 3: Generate fim files in different output formats (gtiff, cog, vrt)
+    # Test 4: Regression test for different output formats
+    # Test 5: Assert error thrown from missing controls file parameter
+    # Test 6: Assert error thrown from missing library parameter
+    # Test 7: Assert error thrown from missing output file parameter
+    # Test 8: Assert error thrown from empty controls file
+    local num_test_cases_fim=8
     local failed_fim_testcases=0
     total_count=$(( total_count + num_test_cases_fim ))
 
@@ -325,25 +386,91 @@ fim_test_cases() {
 
     echo "Running fim test cases..."
 
+    # Test 1: Generate fim files for 6 recurrence intervals
+    echo "Test 1: Generating fim_year.tif files for 6 recurrence intervals..."
     local recurrence_interval=(2 5 10 25 50 100)
     local fim_file_format="GTiff"
     for interval in "${recurrence_interval[@]}"; do
-        echo "Running FIM for ${interval}year interval..."
-        $CMD_EXEC fim -c "$controls_benchmark_dir/controls_${interval}year.csv" -fmt "$fim_file_format" -lib "$library_benchmark" -type depth -o "$fim_test_outputs/fim_${interval}year.tif"
-        if [[ $? -ne 0 ]]; then
-            echo "Warning: FIM command failed for ${interval}year"
-        fi
+        $CMD_EXEC fim -c "$controls_benchmark_dir/controls_${interval}year.csv" -fmt "$fim_file_format" -lib "$library_benchmark" -type depth -o "$fim_test_outputs/fim_${interval}year.tif" &> /dev/null
     done
 
-    echo "FIM outputs created:"
-    ls -lh "$fim_test_outputs/" || echo "No files in $fim_test_outputs"
-
+    # Test 2: Regression test for all recurrence interval fim.tif files
+    echo "Test 2: Regression tests for all recurrence interval fim.tif files..."
     if compare_directories "$fim_test_outputs" "$fim_benchmark_dir" "fim"; then
-        echo "No significant difference in fim.tif files."
+        echo "Test 2 PASSED: No significant difference in fim.tif files."
     else
-        echo "Outputs differ for fim files."
+        echo "Test 2 FAILED: Outputs differ for fim files."
         failed_fim_testcases=$((failed_fim_testcases + 1))
     fi
+
+    # Test 3: Generate fim files in different output formats
+    echo "Test 3: Generating fim files in different output formats..."
+    local file_formats=(gtiff cog vrt)
+    for format in "${file_formats[@]}"; do
+        local output_file="fim_2year.$format"
+        $CMD_EXEC fim -c "$controls_benchmark_dir/controls_2year.csv" -fmt "$format" -lib "$library_benchmark" -type depth -o "$fim_test_output_formats/$output_file" &> /dev/null
+    done
+
+    # Test 4: Regression test for different output formats
+    echo "Test 4: Regression tests for different output formats..."
+    if compare_directories "$fim_reference_output_formats" "$fim_test_output_formats" "fim"; then
+        echo "Test 4 PASSED: No differences in .cog, .vrt & .tif files."
+    else
+        echo "Test 4 FAILED: Outputs differ for different formats."
+        failed_fim_testcases=$((failed_fim_testcases + 1))
+    fi
+
+    # Test 5: Assert error thrown from missing controls file parameter
+    echo "Test 5: Checking missing controls file parameter error..."
+    tempfile=$(mktemp)
+    $CMD_EXEC fim -fmt GTiff -lib "$library_benchmark" -type depth -o "$fim_test_outputs/fim_test.tif" &> "$tempfile" || true
+    if grep -q "missing required flags" "$tempfile"; then
+        echo "Test 5 PASSED: Correct error thrown for missing controls parameter"
+    else
+        echo "Test 5 FAILED: Error messaging inconsistent"
+        cat "$tempfile"
+        failed_fim_testcases=$((failed_fim_testcases + 1))
+    fi
+    rm -f "$tempfile"
+
+    # Test 6: Assert error thrown from missing library parameter
+    echo "Test 6: Checking missing library parameter error..."
+    tempfile=$(mktemp)
+    $CMD_EXEC fim -c "$controls_benchmark_dir/controls_2year.csv" -fmt GTiff -type depth -o "$fim_test_outputs/fim_test.tif" &> "$tempfile" || true
+    if grep -q "missing required flags" "$tempfile"; then
+        echo "Test 6 PASSED: Correct error thrown for missing library parameter"
+    else
+        echo "Test 6 FAILED: Error messaging inconsistent"
+        cat "$tempfile"
+        failed_fim_testcases=$((failed_fim_testcases + 1))
+    fi
+    rm -f "$tempfile"
+
+    # Test 7: Assert error thrown from missing output file parameter
+    echo "Test 7: Checking missing output file parameter error..."
+    tempfile=$(mktemp)
+    $CMD_EXEC fim -c "$controls_benchmark_dir/controls_2year.csv" -fmt GTiff -type depth -lib "$library_benchmark" &> "$tempfile" || true
+    if grep -q "missing required flags" "$tempfile"; then
+        echo "Test 7 PASSED: Correct error thrown for missing output parameter"
+    else
+        echo "Test 7 FAILED: Error messaging inconsistent"
+        cat "$tempfile"
+        failed_fim_testcases=$((failed_fim_testcases + 1))
+    fi
+    rm -f "$tempfile"
+
+    # Test 8: Assert error thrown from empty controls file
+    echo "Test 8: Checking empty controls file error..."
+    tempfile=$(mktemp)
+    $CMD_EXEC fim -c "$flows_files_dir/empty_file.csv" -fmt GTiff -lib "$library_benchmark" -type depth -o "$fim_test_outputs/fim_test.tif" &> "$tempfile" || true
+    if grep -q "no records in controls file" "$tempfile"; then
+        echo "Test 8 PASSED: Correct error thrown for empty controls file"
+    else
+        echo "Test 8 FAILED: Error messaging inconsistent"
+        cat "$tempfile"
+        failed_fim_testcases=$((failed_fim_testcases + 1))
+    fi
+    rm -f "$tempfile"
 
     fim_passed=$(( num_test_cases_fim - failed_fim_testcases ))
     total_passed=$(( total_passed + fim_passed ))
