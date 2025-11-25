@@ -103,7 +103,7 @@ jobs:
 
         # Try to get the scripts path
         $ErrorActionPreference = 'SilentlyContinue'
-        $condaScripts = & conda run -n ci python -c "import sysconfig;print(sysconfig.get_path('scripts'))" 2>$null
+        $condaScripts = & conda run -n ci python -c 'import sysconfig;print(sysconfig.get_path(\"scripts\"))' 2>$null
         $ErrorActionPreference = 'Continue'
 
         Write-Host "Raw output from conda run: '$condaScripts'"
@@ -132,14 +132,14 @@ jobs:
       shell: powershell
       run: |
         Write-Host "Verifying osgeo_utils availability in conda env 'ci'"
-        & conda run -n ci python -c "import importlib.util; import sys; sys.exit(0) if importlib.util.find_spec('osgeo_utils') else sys.exit(1)" 2>$null
+        & conda run -n ci python -c 'import importlib.util; import sys; sys.exit(0 if importlib.util.find_spec(\"osgeo_utils\") else 1)' 2>$null
         if ($LASTEXITCODE -eq 0) {
           Write-Host "osgeo_utils available in conda env 'ci'"
         } else {
           Write-Host "osgeo_utils not available in conda env 'ci'. Tests will continue but some features may be limited."
         }
         # Also show conda python scripts path (for debugging)
-        $pyScriptsPath = & conda run -n ci python -c "import sysconfig;print(sysconfig.get_path('scripts'))" 2>$null
+        $pyScriptsPath = & conda run -n ci python -c 'import sysconfig;print(sysconfig.get_path(\"scripts\"))' 2>$null
         if ($pyScriptsPath) { $pyScriptsPath = $pyScriptsPath.Trim(); Write-Host "Conda python scripts path: $pyScriptsPath" }
 
     - name: Verify gdal installation
@@ -151,7 +151,7 @@ jobs:
           Write-Host "gdalinfo available: $(Get-Command gdalinfo -ErrorAction SilentlyContinue)"
         } else {
           Write-Host "gdalinfo not found; attempting to detect GDAL via Python bindings"
-          $ver = & conda run -n ci python -c "from osgeo import gdal; import sys; print(gdal.__version__)" 2>$null
+          $ver = & conda run -n ci python -c 'from osgeo import gdal; import sys; print(gdal.__version__)' 2>$null
           if ($ver) {
             Write-Host "GDAL Python binding version: $ver"
           } else {
