@@ -92,11 +92,15 @@ jobs:
         Write-Host "Adding conda environment scripts path to PATH (if present)"
         $condaScripts = & conda run -n ci python -c "import sysconfig;print(sysconfig.get_path('scripts'))" 2>$null
         if ($condaScripts) { $condaScripts = $condaScripts.Trim() }
-        if (-not [string]::IsNullOrWhiteSpace($condaScripts) -and (Test-Path -Path $condaScripts)) {
-          Write-Host "Conda scripts path: $condaScripts"
-          Add-Content -Path $env:GITHUB_PATH -Value $condaScripts
+        if ($condaScripts -and $condaScripts.Length -gt 0) {
+          if (Test-Path -Path $condaScripts) {
+            Write-Host "Conda scripts path: $condaScripts"
+            Add-Content -Path $env:GITHUB_PATH -Value $condaScripts
+          } else {
+            Write-Host "Conda scripts path not found: $condaScripts"
+          }
         } else {
-          Write-Host "Conda scripts path not found or conda env not present: $condaScripts"
+          Write-Host "Conda scripts path not available or conda env not present"
         }
 
     - name: Verify Python GDAL utilities (conda)
