@@ -133,7 +133,7 @@ detect_dependencies() {
     if command_exists gdalinfo; then
         echo "Found gdalinfo -> OK"
     else
-        echo "Warning: 'gdalinfo' not found. Some tests may fail. Install GDAL on the runner."
+        echo "Warning: 'gdalinfo' not found. Some tests may fail."
     fi
 
     # Python (used for gdalcompare.py and helpers)
@@ -259,7 +259,9 @@ compare_directories() {
 }
 
 controls_test_cases() {
-    local num_test_cases_controls=9
+    # Test 1: Generate and compare 6 controls files (2, 5, 10, 25, 50, 100 year)
+    # Test 2: Empty start reaches should produce header-only output
+    local num_test_cases_controls=2
     local failed_controls_testcases=0
     total_count=$(( total_count + num_test_cases_controls ))
 
@@ -269,6 +271,7 @@ controls_test_cases() {
     mkdir -p "$control_test_outputs"
 
     echo "Running controls test cases..."
+    echo "Test 1: Generating controls files for 6 recurrence intervals..."
 
     local recurrence_interval=(2 5 10 25 50 100)
     for interval in "${recurrence_interval[@]}"; do
@@ -279,27 +282,27 @@ controls_test_cases() {
     done
 
     if compare_directories "$control_test_outputs" "$controls_benchmark_dir"; then
-        echo "No difference in controls files."
+        echo "Test 1 PASSED: No difference in controls files."
     else
-        echo "Outputs differ for controls."
+        echo "Test 1 FAILED: Outputs differ for controls."
         failed_controls_testcases=$((failed_controls_testcases + 1))
     fi
 
-    # A few error-assertion tests similar to linux script
-    # Run command with empty start reaches and check the output file has only header
+    # Test 2: Empty start reaches should produce header-only output
+    echo "Test 2: Checking empty start reaches behavior..."
     $CMD_EXEC controls -db "$db_path/ripple.gpkg" -f "$flows_files_dir/flows_2year.csv" -o "$control_test_outputs/controls_2year_empty.csv" -scsv "$start_reaches_dir/empty_start_reaches.csv" &> /dev/null || true
     # Check header only (empty outputs) - the output file should have just the header
     if [[ -f "$control_test_outputs/controls_2year_empty.csv" ]] && head -n 1 "$control_test_outputs/controls_2year_empty.csv" | grep -q "reach_id,flow,control_stage"; then
         # Check that file has only 1 line (header only, no data)
         line_count=$(wc -l < "$control_test_outputs/controls_2year_empty.csv" | tr -d '[:space:]')
         if [[ "$line_count" -eq 1 ]]; then
-            echo "Empty start reaches produced empty controls file -> ok"
+            echo "Test 2 PASSED: Empty start reaches produced header-only file"
         else
-            echo "Empty start reaches file has $line_count lines (expected 1)"
+            echo "Test 2 FAILED: Empty start reaches file has $line_count lines (expected 1)"
             failed_controls_testcases=$((failed_controls_testcases + 1))
         fi
     else
-        echo "Empty start reaches did not produce expected empty controls file"
+        echo "Test 2 FAILED: Empty start reaches did not produce expected output file"
         failed_controls_testcases=$((failed_controls_testcases + 1))
     fi
 
@@ -308,7 +311,8 @@ controls_test_cases() {
 }
 
 fim_test_cases() {
-    local num_test_cases_fim=8
+    # Test 1: Generate and compare 6 FIM raster files (2, 5, 10, 25, 50, 100 year)
+    local num_test_cases_fim=1
     local failed_fim_testcases=0
     total_count=$(( total_count + num_test_cases_fim ))
 
@@ -324,8 +328,15 @@ fim_test_cases() {
     local recurrence_interval=(2 5 10 25 50 100)
     local fim_file_format="GTiff"
     for interval in "${recurrence_interval[@]}"; do
-        $CMD_EXEC fim -c "$controls_benchmark_dir/controls_${interval}year.csv" -fmt "$fim_file_format" -lib "$library_benchmark" -type depth -o "$fim_test_outputs/fim_${interval}year.tif" &> /dev/null || true
+        echo "Running FIM for ${interval}year interval..."
+        $CMD_EXEC fim -c "$controls_benchmark_dir/controls_${interval}year.csv" -fmt "$fim_file_format" -lib "$library_benchmark" -type depth -o "$fim_test_outputs/fim_${interval}year.tif"
+        if [[ $? -ne 0 ]]; then
+            echo "Warning: FIM command failed for ${interval}year"
+        fi
     done
+
+    echo "FIM outputs created:"
+    ls -lh "$fim_test_outputs/" || echo "No files in $fim_test_outputs"
 
     if compare_directories "$fim_test_outputs" "$fim_benchmark_dir" "fim"; then
         echo "No significant difference in fim.tif files."
@@ -339,7 +350,9 @@ fim_test_cases() {
 }
 
 validate_test_cases() {
-    echo "Validate test cases are not implemented separately for Windows; invoking full test suite's validate steps via fim or controls where applicable."
+    echo "Validate test cases are not fully implemented for Windows."
+    echo "Note: On Windows, validate functionality may be limited without GDAL runtime libraries."
+    echo "Skipping validate tests on this platform."
 }
 
 case "$method" in
