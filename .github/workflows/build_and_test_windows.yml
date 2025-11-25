@@ -70,7 +70,10 @@ jobs:
       run: |
         Write-Host "Attempting to install GDAL via Chocolatey (may fail on hosted runner)..."
         # Try choco install but do not fail the job if it can't install
-        choco install gdal -y || Write-Host "choco gdal install failed or package not found; continuing"
+        & choco install gdal -y
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "choco gdal install failed or package not found; continuing"
+        }
         # refresh environment variables if available
         if (Get-Command refreshenv -ErrorAction SilentlyContinue) { refreshenv }
         # Only run gdalinfo if available
@@ -85,8 +88,19 @@ jobs:
       run: |
         Write-Host "Ensure pip and install GDAL Python helpers"
         python -m pip install --upgrade pip setuptools wheel
-        # Try installing osgeo-utils first (provides osgeo_utils.gdalcompare), fall back to gdal
-        python -m pip install osgeo-utils || python -m pip install gdal || python -m pip install osgeo
+        # Try installing osgeo-utils first (provides osgeo_utils.gdalcompare), fall back to gdal then osgeo
+        $pyGdalInstalled = $false
+        & python -m pip install osgeo-utils
+        if ($LASTEXITCODE -eq 0) { $pyGdalInstalled = $true }
+        if (-not $pyGdalInstalled) {
+          & python -m pip install gdal
+          if ($LASTEXITCODE -eq 0) { $pyGdalInstalled = $true }
+        }
+        if (-not $pyGdalInstalled) {
+          & python -m pip install osgeo
+          if ($LASTEXITCODE -eq 0) { $pyGdalInstalled = $true }
+        }
+        if ($pyGdalInstalled) { Write-Host "Python GDAL utilities installed" } else { Write-Host "Python GDAL utilities could not be installed; continuing" }
         # Print scripts path and verify gdalcompare availability via module or script
         $pyScriptsPath = & python -c "import sysconfig,sys; print(sysconfig.get_path('scripts'))" 2>$null
         $scriptsPath = $pyScriptsPath.Trim()
@@ -99,7 +113,8 @@ jobs:
           Write-Host "Python scripts path not found: $scriptsPath"
         }
         Write-Host "Check gdalcompare availability (module invocation)"
-        python -m osgeo_utils.gdalcompare --help 2>$null || Write-Host "osgeo_utils.gdalcompare not available via module"
+        & python -m osgeo_utils.gdalcompare --help 2>$null
+        if ($LASTEXITCODE -ne 0) { Write-Host "osgeo_utils.gdalcompare not available via module" } else { Write-Host "osgeo_utils.gdalcompare available via module" }
         # If gdalcompare.py is on PATH, show its location
         if (Get-Command gdalcompare.py -ErrorAction SilentlyContinue) {
           Write-Host "Found gdalcompare.py at: $(Get-Command gdalcompare.py).Source"
