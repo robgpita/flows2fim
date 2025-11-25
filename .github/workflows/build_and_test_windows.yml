@@ -83,44 +83,48 @@ jobs:
           Write-Host "gdalinfo not found on PATH; will try to use Python GDAL bindings if available"
         }
 
-    - name: Install Python GDAL utilities
+    - name: Setup Conda (install GDAL faster via conda)
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        python-version: '3.9'
+        use-mamba: true
+        activate-environment: ci
+
+    - name: Install GDAL + osgeo-utils with mamba
+      shell: bash
+      run: |
+        # Use mamba (fast) to install GDAL and osgeo-utils from conda-forge
+        mamba install -y -c conda-forge gdal osgeo-utils || true
+        # show installed gdal/osgeo presence if available
+        python -c "import importlib,sys; print('osgeo present' if importlib.util.find_spec('osgeo') else '')" || true
+
+    - name: Add conda env scripts to PATH
       shell: powershell
       run: |
-        Write-Host "Ensure pip and install GDAL Python helpers"
-        python -m pip install --upgrade pip setuptools wheel
-        # Try installing osgeo-utils first (provides osgeo_utils.gdalcompare), fall back to gdal then osgeo
-        $pyGdalInstalled = $false
-        & python -m pip install osgeo-utils
-        if ($LASTEXITCODE -eq 0) { $pyGdalInstalled = $true }
-        if (-not $pyGdalInstalled) {
-          & python -m pip install gdal
-          if ($LASTEXITCODE -eq 0) { $pyGdalInstalled = $true }
-        }
-        if (-not $pyGdalInstalled) {
-          & python -m pip install osgeo
-          if ($LASTEXITCODE -eq 0) { $pyGdalInstalled = $true }
-        }
-        if ($pyGdalInstalled) { Write-Host "Python GDAL utilities installed" } else { Write-Host "Python GDAL utilities could not be installed; continuing" }
-        # Print scripts path and verify gdalcompare availability via module or script
-        $pyScriptsPath = & python -c "import sysconfig,sys; print(sysconfig.get_path('scripts'))" 2>$null
-        $scriptsPath = $pyScriptsPath.Trim()
-        Write-Host "Python scripts path: $scriptsPath"
-        # Add Python scripts path to runner PATH so installed scripts are discoverable
-        if (Test-Path -Path $scriptsPath) {
-          Write-Host "Adding Python scripts path to PATH"
-          Add-Content -Path $env:GITHUB_PATH -Value $scriptsPath
+        Write-Host "Adding conda environment scripts path to PATH (if present)"
+        $condaScripts = & conda run -n ci python -c "import sysconfig;print(sysconfig.get_path('scripts'))" 2>$null
+        if ($condaScripts) { $condaScripts = $condaScripts.Trim() }
+        if ($condaScripts -and (Test-Path -Path $condaScripts)) {
+          Write-Host "Conda scripts path: $condaScripts"
+          Add-Content -Path $env:GITHUB_PATH -Value $condaScripts
         } else {
-          Write-Host "Python scripts path not found: $scriptsPath"
+          Write-Host "Conda scripts path not found or conda env not present: $condaScripts"
         }
-        Write-Host "Check gdalcompare availability (module invocation)"
-        & python -m osgeo_utils.gdalcompare --help 2>$null
-        if ($LASTEXITCODE -ne 0) { Write-Host "osgeo_utils.gdalcompare not available via module" } else { Write-Host "osgeo_utils.gdalcompare available via module" }
-        # If gdalcompare.py is on PATH, show its location
-        if (Get-Command gdalcompare.py -ErrorAction SilentlyContinue) {
-          Write-Host "Found gdalcompare.py at: $(Get-Command gdalcompare.py).Source"
+
+    - name: Verify Python GDAL utilities (conda)
+      shell: powershell
+      run: |
+        Write-Host "Verifying osgeo_utils availability in conda env 'ci'"
+        & conda run -n ci python -c "import importlib,sys; sys.exit(0) if importlib.util.find_spec('osgeo_utils') else sys.exit(1)" 2>$null
+        if ($LASTEXITCODE -eq 0) {
+          Write-Host "osgeo_utils available in conda env 'ci'"
         } else {
-          Write-Host "gdalcompare.py not found on PATH"
+          Write-Host "osgeo_utils not available in conda env 'ci'. Tests will continue but some features may be limited."
         }
+        # Also show conda python scripts path (for debugging)
+        $pyScriptsPath = & conda run -n ci python -c "import sysconfig;print(sysconfig.get_path('scripts'))" 2>$null
+        if ($pyScriptsPath) { $pyScriptsPath = $pyScriptsPath.Trim(); Write-Host "Conda python scripts path: $pyScriptsPath" }
 
     - name: Verify gdal installation
       shell: powershell
