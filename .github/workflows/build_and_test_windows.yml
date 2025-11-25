@@ -129,35 +129,36 @@ jobs:
         }
 
     - name: Verify Python GDAL utilities (conda)
-      shell: powershell
+      shell: bash -l {0}
       run: |
-        Write-Host "Verifying osgeo_utils availability in conda env 'ci'"
-        & conda run -n ci python -c 'import importlib.util; import sys; sys.exit(0 if importlib.util.find_spec(\"osgeo_utils\") else 1)' 2>$null
-        if ($LASTEXITCODE -eq 0) {
-          Write-Host "osgeo_utils available in conda env 'ci'"
-        } else {
-          Write-Host "osgeo_utils not available in conda env 'ci'. Tests will continue but some features may be limited."
-        }
+        echo "Verifying osgeo_utils availability in conda env 'ci'"
+        if conda run -n ci python -c "import importlib.util; import sys; sys.exit(0 if importlib.util.find_spec('osgeo_utils') else 1)" 2>/dev/null; then
+          echo "osgeo_utils available in conda env 'ci'"
+        else
+          echo "osgeo_utils not available in conda env 'ci'. Tests will continue but some features may be limited."
+        fi
         # Also show conda python scripts path (for debugging)
-        $pyScriptsPath = & conda run -n ci python -c 'import sysconfig;print(sysconfig.get_path(\"scripts\"))' 2>$null
-        if ($pyScriptsPath) { $pyScriptsPath = $pyScriptsPath.Trim(); Write-Host "Conda python scripts path: $pyScriptsPath" }
+        pyScriptsPath=$(conda run -n ci python -c "import sysconfig;print(sysconfig.get_path('scripts'))" 2>/dev/null || echo "")
+        if [ -n "$pyScriptsPath" ]; then
+          echo "Conda python scripts path: $pyScriptsPath"
+        fi
 
     - name: Verify gdal installation
-      shell: powershell
+      shell: bash -l {0}
       run: |
         # Prefer gdalinfo if available, otherwise try to detect GDAL via Python bindings
-        if (Get-Command gdalinfo -ErrorAction SilentlyContinue) {
+        if command -v gdalinfo >/dev/null 2>&1; then
           gdalinfo --version
-          Write-Host "gdalinfo available: $(Get-Command gdalinfo -ErrorAction SilentlyContinue)"
-        } else {
-          Write-Host "gdalinfo not found; attempting to detect GDAL via Python bindings"
-          $ver = & conda run -n ci python -c 'from osgeo import gdal; import sys; print(gdal.__version__)' 2>$null
-          if ($ver) {
-            Write-Host "GDAL Python binding version: $ver"
-          } else {
-            Write-Host "GDAL not found via gdalinfo or Python bindings. Tests may still run but some comparisons may be limited."
-          }
-        }
+          echo "gdalinfo available: $(command -v gdalinfo)"
+        else
+          echo "gdalinfo not found; attempting to detect GDAL via Python bindings"
+          ver=$(conda run -n ci python -c "from osgeo import gdal; import sys; print(gdal.__version__)" 2>/dev/null || echo "")
+          if [ -n "$ver" ]; then
+            echo "GDAL Python binding version: $ver"
+          else
+            echo "GDAL not found via gdalinfo or Python bindings. Tests may still run but some comparisons may be limited."
+          fi
+        fi
 
     - name: Issue flows2fim controls test cases
       run: |
