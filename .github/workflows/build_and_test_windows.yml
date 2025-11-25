@@ -71,24 +71,6 @@ jobs:
           exit 1
         }
 
-    - name: Install & Configure GDAL
-      shell: powershell
-      run: |
-        Write-Host "Attempting to install GDAL via Chocolatey (may fail on hosted runner)..."
-        # Try choco install but do not fail the job if it can't install
-        & choco install gdal -y
-        if ($LASTEXITCODE -ne 0) {
-          Write-Host "choco gdal install failed or package not found; continuing"
-        }
-        # refresh environment variables if available
-        if (Get-Command refreshenv -ErrorAction SilentlyContinue) { refreshenv }
-        # Only run gdalinfo if available
-        if (Get-Command gdalinfo -ErrorAction SilentlyContinue) {
-          gdalinfo --version
-        } else {
-          Write-Host "gdalinfo not found on PATH; will try to use Python GDAL bindings if available"
-        }
-
     - name: Setup Conda (install GDAL via conda)
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -110,7 +92,7 @@ jobs:
         Write-Host "Adding conda environment scripts path to PATH (if present)"
         $condaScripts = & conda run -n ci python -c "import sysconfig;print(sysconfig.get_path('scripts'))" 2>$null
         if ($condaScripts) { $condaScripts = $condaScripts.Trim() }
-        if ($condaScripts -and ![string]::IsNullOrWhiteSpace($condaScripts) -and (Test-Path -Path $condaScripts)) {
+        if (-not [string]::IsNullOrWhiteSpace($condaScripts) -and (Test-Path -Path $condaScripts)) {
           Write-Host "Conda scripts path: $condaScripts"
           Add-Content -Path $env:GITHUB_PATH -Value $condaScripts
         } else {
