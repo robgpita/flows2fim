@@ -143,7 +143,8 @@ detect_dependencies() {
     elif [[ -n "$PY" ]]; then
         # Try importing osgeo_utils.gdalcompare (GDAL >=3)
         if $PY - <<PYCODE 2>/dev/null
-import importlib,sys
+import importlib.util
+import sys
 spec = importlib.util.find_spec('osgeo_utils.gdalcompare')
 print(bool(spec))
 PYCODE
@@ -152,7 +153,8 @@ PYCODE
         else
             # Try old script name
             if $PY - <<'PYCODE' 2>/dev/null
-import importlib,sys
+import importlib.util
+import sys
 spec = importlib.util.find_spec('gdal')
 print(bool(spec))
 PYCODE

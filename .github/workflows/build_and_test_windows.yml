@@ -62,8 +62,14 @@ jobs:
         Write-Host "Listing artifact contents"
         Get-ChildItem -Recurse builds\windows-amd64
         Write-Host "Invoke version"
-        .\builds\windows-amd64\flows2fim.exe --version
-        Add-Content -Path $env:GITHUB_PATH -Value "builds/windows-amd64"
+        if (Test-Path "builds\windows-amd64\flows2fim.exe") {
+          & "builds\windows-amd64\flows2fim.exe" --version
+          $fullPath = (Resolve-Path "builds\windows-amd64").Path
+          Add-Content -Path $env:GITHUB_PATH -Value $fullPath
+        } else {
+          Write-Error "flows2fim.exe not found in builds\windows-amd64"
+          exit 1
+        }
 
     - name: Install & Configure GDAL
       shell: powershell
@@ -83,21 +89,20 @@ jobs:
           Write-Host "gdalinfo not found on PATH; will try to use Python GDAL bindings if available"
         }
 
-    - name: Setup Conda (install GDAL faster via conda)
+    - name: Setup Conda (install GDAL via conda)
       uses: conda-incubator/setup-miniconda@v2
       with:
         auto-update-conda: true
         python-version: '3.9'
-        use-mamba: true
         activate-environment: ci
 
-    - name: Install GDAL + osgeo-utils with mamba
+    - name: Install GDAL + osgeo-utils
       shell: bash
       run: |
-        # Use mamba (fast) to install GDAL and osgeo-utils from conda-forge
-        mamba install -y -c conda-forge gdal osgeo-utils || true
+        # Use conda to install GDAL and osgeo-utils from conda-forge
+        conda install -n ci -y -c conda-forge gdal osgeo-utils || true
         # show installed gdal/osgeo presence if available
-        python -c "import importlib,sys; print('osgeo present' if importlib.util.find_spec('osgeo') else '')" || true
+        conda run -n ci python -c "import importlib.util; import sys; print('osgeo present' if importlib.util.find_spec('osgeo') else '')" || true
 
     - name: Add conda env scripts to PATH
       shell: powershell
@@ -105,7 +110,7 @@ jobs:
         Write-Host "Adding conda environment scripts path to PATH (if present)"
         $condaScripts = & conda run -n ci python -c "import sysconfig;print(sysconfig.get_path('scripts'))" 2>$null
         if ($condaScripts) { $condaScripts = $condaScripts.Trim() }
-        if ($condaScripts -and (Test-Path -Path $condaScripts)) {
+        if ($condaScripts -and ![string]::IsNullOrWhiteSpace($condaScripts) -and (Test-Path -Path $condaScripts)) {
           Write-Host "Conda scripts path: $condaScripts"
           Add-Content -Path $env:GITHUB_PATH -Value $condaScripts
         } else {
@@ -116,7 +121,7 @@ jobs:
       shell: powershell
       run: |
         Write-Host "Verifying osgeo_utils availability in conda env 'ci'"
-        & conda run -n ci python -c "import importlib,sys; sys.exit(0) if importlib.util.find_spec('osgeo_utils') else sys.exit(1)" 2>$null
+        & conda run -n ci python -c "import importlib.util; import sys; sys.exit(0) if importlib.util.find_spec('osgeo_utils') else sys.exit(1)" 2>$null
         if ($LASTEXITCODE -eq 0) {
           Write-Host "osgeo_utils available in conda env 'ci'"
         } else {
@@ -135,7 +140,7 @@ jobs:
           Write-Host "gdalinfo available: $(Get-Command gdalinfo -ErrorAction SilentlyContinue)"
         } else {
           Write-Host "gdalinfo not found; attempting to detect GDAL via Python bindings"
-            $ver = & python -c 'from osgeo import gdal; import sys; print(gdal.__version__)' 2>$null || $null
+          $ver = & conda run -n ci python -c "from osgeo import gdal; import sys; print(gdal.__version__)" 2>$null
           if ($ver) {
             Write-Host "GDAL Python binding version: $ver"
           } else {
