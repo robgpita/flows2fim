@@ -221,9 +221,21 @@ compare_directories() {
                 fi
             fi
         elif [[ -f "$filepath2" ]]; then
-            if ! cmp -s "$file" "$filepath2"; then
-                echo "Files differ: $filename"
-                any_diff=1
+            # For CSV files, normalize line endings before comparison
+            if [[ "$filename" == *.csv ]]; then
+                # Compare after normalizing line endings (handle Windows CRLF vs Unix LF)
+                if ! diff -q --strip-trailing-cr "$file" "$filepath2" &> /dev/null; then
+                    echo "Files differ: $filename"
+                    # Show first few differences for debugging
+                    echo "  First 5 lines of differences:"
+                    diff --strip-trailing-cr "$file" "$filepath2" | head -n 10 || true
+                    any_diff=1
+                fi
+            else
+                if ! cmp -s "$file" "$filepath2"; then
+                    echo "Files differ: $filename"
+                    any_diff=1
+                fi
             fi
         else
             echo "File not found in dir2: $filename"
