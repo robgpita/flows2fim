@@ -77,9 +77,10 @@ jobs:
         auto-update-conda: true
         python-version: '3.9'
         activate-environment: ci
+        channels: conda-forge
 
     - name: Install GDAL + osgeo-utils
-      shell: bash
+      shell: bash -l {0}
       run: |
         # Use conda to install GDAL and osgeo-utils from conda-forge
         conda install -n ci -y -c conda-forge gdal osgeo-utils || true
@@ -91,9 +92,9 @@ jobs:
       run: |
         Write-Host "Adding conda environment scripts path to PATH (if present)"
         $condaScripts = & conda run -n ci python -c "import sysconfig;print(sysconfig.get_path('scripts'))" 2>$null
-        if ($condaScripts) { $condaScripts = $condaScripts.Trim() }
-        if ($condaScripts -and $condaScripts.Length -gt 0) {
-          if (Test-Path -Path $condaScripts) {
+        if ($condaScripts) {
+          $condaScripts = $condaScripts.Trim()
+          if ($condaScripts -ne "" -and (Test-Path -Path $condaScripts)) {
             Write-Host "Conda scripts path: $condaScripts"
             Add-Content -Path $env:GITHUB_PATH -Value $condaScripts
           } else {
