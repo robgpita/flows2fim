@@ -286,16 +286,22 @@ controls_test_cases() {
     fi
 
     # A few error-assertion tests similar to linux script
-    tempfile=$(mktemp)
-    $CMD_EXEC controls -db "$db_path/ripple.gpkg" -f "$flows_files_dir/flows_2year.csv" -o "$control_test_outputs/controls_2year.csv" -scsv "$start_reaches_dir/empty_start_reaches.csv" &> "$tempfile" || true
-    # Check header only (empty outputs)
-    if head -n 1 "$tempfile" | grep -q "reach_id,flow,control_stage"; then
-        echo "Empty start reaches produced empty controls file -> ok"
+    # Run command with empty start reaches and check the output file has only header
+    $CMD_EXEC controls -db "$db_path/ripple.gpkg" -f "$flows_files_dir/flows_2year.csv" -o "$control_test_outputs/controls_2year_empty.csv" -scsv "$start_reaches_dir/empty_start_reaches.csv" &> /dev/null || true
+    # Check header only (empty outputs) - the output file should have just the header
+    if [[ -f "$control_test_outputs/controls_2year_empty.csv" ]] && head -n 1 "$control_test_outputs/controls_2year_empty.csv" | grep -q "reach_id,flow,control_stage"; then
+        # Check that file has only 1 line (header only, no data)
+        line_count=$(wc -l < "$control_test_outputs/controls_2year_empty.csv" | tr -d '[:space:]')
+        if [[ "$line_count" -eq 1 ]]; then
+            echo "Empty start reaches produced empty controls file -> ok"
+        else
+            echo "Empty start reaches file has $line_count lines (expected 1)"
+            failed_controls_testcases=$((failed_controls_testcases + 1))
+        fi
     else
         echo "Empty start reaches did not produce expected empty controls file"
         failed_controls_testcases=$((failed_controls_testcases + 1))
     fi
-    rm -f "$tempfile"
 
     controls_passed=$(( num_test_cases_controls - failed_controls_testcases ))
     total_passed=$(( total_passed + controls_passed ))
