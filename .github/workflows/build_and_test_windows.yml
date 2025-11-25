@@ -161,16 +161,18 @@ jobs:
         fi
 
     - name: Issue flows2fim controls test cases
+      shell: bash -l {0}
       run: |
+        pwd
+        git rev-parse --show-toplevel
         ./scripts/test_suite_windows.sh controls
-      shell: bash
 
     - name: Issue flows2fim fim test cases
+      shell: bash -l {0}
       run: |
         ./scripts/test_suite_windows.sh fim
-      shell: bash
 
     - name: Issue flows2fim validate test cases
+      shell: bash -l {0}
       run: |
         ./scripts/test_suite_windows.sh validate
-      shell: bash
