@@ -163,8 +163,6 @@ jobs:
     - name: Issue flows2fim controls test cases
       shell: bash -l {0}
       run: |
-        pwd
-        git rev-parse --show-toplevel
         ./scripts/test_suite_windows.sh controls
 
     - name: Issue flows2fim fim test cases

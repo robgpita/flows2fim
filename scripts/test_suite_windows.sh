@@ -58,7 +58,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Ensure script is run from repo root
-if [[ "$(git rev-parse --show-toplevel 2>/dev/null)" != "$(pwd)" ]]; then
+# Normalize paths to handle Windows Git Bash path format differences
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+current_dir=$(pwd)
+
+# Convert Windows-style path (D:/...) to Unix-style (/d/...) if needed
+if [[ "$repo_root" =~ ^[A-Z]:/.*$ ]]; then
+    drive_letter=$(echo "$repo_root" | cut -c1 | tr '[:upper:]' '[:lower:]')
+    repo_root="/${drive_letter}${repo_root:2}"
+fi
+
+if [[ "$repo_root" != "$current_dir" ]]; then
     echo "Error: This script must be run from the root directory of the flows2fim repository."
     usage
     exit 1
