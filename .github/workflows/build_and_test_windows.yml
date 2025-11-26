@@ -78,6 +78,8 @@ jobs:
         python-version: '3.9'
         activate-environment: ci
         channels: conda-forge
+      env:
+        CONDA_VERBOSITY: 0
 
     - name: Install GDAL
       shell: bash -l {0}
