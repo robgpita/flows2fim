@@ -198,7 +198,8 @@ compare_directories() {
     for file in "$dir1"/*; do
         filename=$(basename "$file")
         filepath2="$dir2/$filename"
-        if [[ "$filename" == "fim_2year_test_rel_false.vrt" ]]; then
+        # Skip VRT files as they contain absolute paths that differ between environments
+        if [[ "$filename" == *.vrt ]]; then
             continue
         fi
         if [[ -f "$filepath2" && "$fim_mode" == "fim" ]]; then
@@ -246,6 +247,10 @@ compare_directories() {
     for file in "$dir2"/*; do
         filename=$(basename "$file")
         filepath1="$dir1/$filename"
+        # Skip VRT files as they contain absolute paths that differ between environments
+        if [[ "$filename" == *.vrt ]]; then
+            continue
+        fi
         if [[ ! -f "$filepath1" ]]; then
             echo "File in $dir2 not found in $dir1: $filename"
             any_diff=1

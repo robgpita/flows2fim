@@ -174,8 +174,7 @@ jobs:
       shell: bash -l {0}
       continue-on-error: true
       run: |
-        echo "Note: FIM tests may fail on Windows due to GDAL runtime dependencies"
-        ./scripts/test_suite_windows.sh fim || echo "FIM tests failed (expected on Windows without GDAL DLLs)"
+        ./scripts/test_suite_windows.sh fim
 
     - name: Issue flows2fim validate test cases
       shell: bash -l {0}
