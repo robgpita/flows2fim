@@ -331,7 +331,7 @@ controls_test_cases() {
     tempfile=$(mktemp)
     temp_out=$(mktemp)
     $CMD_EXEC controls -db "$db_path/ripple.gpkg" \
-        -f "$flows_files_dir/flows_2year_swapped.csv" \
+        -f "$flows_files_dir/columns_swapped.csv" \
         -o "$temp_out" \
         -scsv "$start_reaches_dir/start_reaches.csv" &> "$tempfile" || true
     if grep -q "Flow not found for reach" "$tempfile"; then
@@ -348,7 +348,7 @@ controls_test_cases() {
     tempfile=$(mktemp)
     temp_out=$(mktemp)
     $CMD_EXEC controls -db "$db_path/ripple.gpkg" \
-        -f "$flows_files_dir/flows_2year_empty_values.csv" \
+        -f "$flows_files_dir/empty_flow_values_no_header.csv" \
         -o "$temp_out" \
         -scsv "$start_reaches_dir/start_reaches.csv" &> "$tempfile" || true
     if grep -q "Flow not found for reach" "$tempfile"; then
